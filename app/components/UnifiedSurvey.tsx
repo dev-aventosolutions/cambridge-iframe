@@ -203,18 +203,18 @@ export default function UnifiedSurvey() {
       <div className="relative w-full max-w-4xl mx-auto z-10">
         {/* Header with Logo */}
         <div className="flex flex-col mb-8">
-          <div className="flex items-center justify-center my-12">
+          {/* <div className="flex items-center justify-center my-12">
             <img
               src="/logo.png"
               alt="Logo"
               style={{ width: "198px", height: "34px" }}
             />
-          </div>
-          <h1 className="text-[20px] font-normal text-[#D7FDF5] font-georgia">
+          </div> */}
+          <h1 className="text-[40px] font-bold mt-16 text-[#D7FDF5] font-georgia">
             Ready to prompt the future?
           </h1>
           <hr className="border-t-2 border-white/20 my-4" />
-          <p className="mt-2 text-start max-w-2xl text-[12px] font-normal text-[#D7FDF5] font-georgia">
+          <p className="mt-2 text-start text-[18px] font-normal text-[#D7FDF5] font-georgia">
             This is the start of a global discussion. Share your thoughts and
             see what others have to say.
           </p>
@@ -241,7 +241,7 @@ export default function UnifiedSurvey() {
                   <div className="bg-[#D7FDF5] rounded-2xl p-4 mb-6 border border-white/10 mt-4">
                     {/* Progress Section */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                      <span className="text-[8px] font-bold text-[#133844]  py-1 self-start sm:self-auto font-arial">
+                      <span className="text-[14px] font-bold text-[#133844]  py-1 self-start sm:self-auto font-arial">
                         Prompt {currentIndex + 1} of {questions.length}
                       </span>
                       <div className="flex flex-wrap gap-1 justify-center sm:justify-end">
@@ -267,7 +267,7 @@ export default function UnifiedSurvey() {
 
                     {/* Question Text */}
                     <div className="mb-6">
-                      <h2 className="text-[10px] font-normal text-[#133844] text-start font-georgia">
+                      <h2 className="text-[14px] font-normal text-[#133844] text-start font-georgia">
                         {questions[currentIndex]?.question}
                       </h2>
                     </div>
@@ -284,7 +284,7 @@ export default function UnifiedSurvey() {
                               e.target.value
                             )
                           }
-                          placeholder="Type your answer here..."
+                          placeholder="Type your prompt here..."
                           className="w-full h-32 sm:h-40 p-4 cursor-pointer text-[#133844] placeholder-[#133844]/60 resize-none outline-none text-lg"
                         />
                       </div>
@@ -328,12 +328,12 @@ export default function UnifiedSurvey() {
                                 className="p-4 border-b-[0.5] border-white last:border-b-0"
                               >
                                 {/* Answer Text */}
-                                <p className="text-[#D7FDF5] font-normal text-[8px] mb-2 font-georgia ">
+                                <p className="text-[#D7FDF5] font-normal text-[14px] mb-2 font-georgia ">
                                   {answer.answer}
                                 </p>
 
                                 {/* User Info - Country and Date */}
-                                <div className="text-[6px] text-[#D7FDF5] font-bold flex justify-between font-arial">
+                                <div className="text-[14px] text-[#D7FDF5] font-bold flex justify-between font-arial">
                                   <span>
                                     {answer.userName
                                       ? answer.userName
@@ -355,7 +355,7 @@ export default function UnifiedSurvey() {
                                           .trim()
                                       : "Anonymous"}
                                   </span>
-                                  <span className="text-[4px] font-bold text-[#133844] bg-[#D7FDF5] px-2 py-1 rounded-full font-arial">
+                                  <span className="text-[14px] font-bold text-[#133844] bg-[#D7FDF5] px-2 py-1 rounded-full font-arial">
                                     Topic {answer.questionNumber || "?"}
                                   </span>
                                 </div>
@@ -365,7 +365,7 @@ export default function UnifiedSurvey() {
                             <div className="text-center py-6 text-white/60 h-full flex items-center justify-center">
                               <div>
                                 <p>No responses yet.</p>
-                                <p className="text-sm mt-2">
+                                <p className="text-[14px] mt-2">
                                   Be the first to share your thoughts!
                                 </p>
                               </div>
@@ -399,7 +399,7 @@ export default function UnifiedSurvey() {
                   {/* Question Filter Badges */}
                   <div className="mb-6 mt-6 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-[8px] font-bold font-arial text-[#D7FDF5]">
+                      <h3 className="text-[14px] font-bold font-arial text-[#D7FDF5]">
                         View by topic
                       </h3>
                     </div>
@@ -407,7 +407,7 @@ export default function UnifiedSurvey() {
                       {/* All Questions Badge */}
                       <button
                         onClick={() => handleQuestionFilter(null)}
-                        className={`px-4 py-2 rounded-full text-[8px] font-normal font-arial cursor-pointer transition-all duration-300 ${
+                        className={`px-4 py-2 rounded-full text-[14px] font-normal font-arial cursor-pointer transition-all duration-300 ${
                           selectedQuestion === null
                             ? "bg-white text-[#133844] shadow-lg"
                             : "bg-[#8EE8D8] text-[#133844]"
@@ -421,7 +421,7 @@ export default function UnifiedSurvey() {
                         <button
                           key={question.id}
                           onClick={() => handleQuestionFilter(question.id)}
-                          className={`px-4 py-2 rounded-full text-[8px] cursor-pointer font-normal font-arial transition-all duration-300 ${
+                          className={`px-4 py-2 rounded-full text-[14px] cursor-pointer font-normal font-arial transition-all duration-300 ${
                             selectedQuestion === question.id
                               ? "bg-white text-[#133844] shadow-lg"
                               : "bg-[#8EE8D8] text-[#133844]"
@@ -439,19 +439,19 @@ export default function UnifiedSurvey() {
                   {/* User Info - Separate Boxes */}
                   <div className="space-y-4 mb-8 bg-[#D7FDF5] text-black p-6 rounded-2xl border border-white/10">
                     <div className="text-start text-black">
-                      <h2 className="text-[8px] font-arial font-bold text-[#133844] mb-1">
+                      <h2 className="text-[14px] font-arial font-bold text-[#133844] mb-1">
                         Almost Done!
                       </h2>
-                      <p className="text-[10px] font-normal font-georgia text-[#133844]">
+                      <p className="text-[12px] font-normal font-georgia text-[#133844]">
                         Please provide your details
                       </p>
-                      <p className="text-[10px] font-normal font-georgia text-[#133844]">
+                      <p className="text-[12px] font-normal font-georgia text-[#133844]">
                         to complete the submission
                       </p>
                     </div>
                     {/* Full Name */}
                     <div>
-                      <label className="block text-[8px] font-normal font-georgia text-[#133844] mb-1 ml-1">
+                      <label className="block text-[12px] font-normal font-georgia text-[#133844] mb-1 ml-1">
                         Full name
                       </label>
                       <input
@@ -466,7 +466,7 @@ export default function UnifiedSurvey() {
 
                     {/* Email Address */}
                     <div>
-                      <label className="block text-[8px] font-normal font-georgia text-[#133844] mb-1 ml-1">
+                      <label className="block text-[12px] font-normal font-georgia text-[#133844] mb-1 ml-1">
                         Email address
                       </label>
                       <div className="border-b-2 border-black/30 pb-1">
@@ -483,7 +483,7 @@ export default function UnifiedSurvey() {
 
                     {/* Country */}
                     <div>
-                      <label className="block text-[8px] font-normal font-georgia text-[#133844] mb-1 ml-1">
+                      <label className="block text-[12px] font-normal font-georgia text-[#133844] mb-1 ml-1">
                         Country
                       </label>
                       <div className="border-b-2 border-black/30 pb-1">
@@ -517,7 +517,7 @@ export default function UnifiedSurvey() {
                       />
                       <label
                         htmlFor="gdpr"
-                        className="text-[5px] font-normal font-georgia text-[#133844] leading-relaxed text-left"
+                        className="text-[12px] font-normal font-georgia text-[#133844] leading-relaxed text-left"
                       >
                         Check this box if you're willing for us to
                         <br />
