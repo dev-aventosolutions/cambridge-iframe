@@ -36,7 +36,7 @@ export interface UserInfo {
   name: string;
   email: string;
   country: string;
-  organization: string;
+  organization?: string;
   gdprConsent: boolean;
 }
 
