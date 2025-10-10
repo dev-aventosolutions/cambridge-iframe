@@ -26,13 +26,17 @@ export interface Answer {
   userName?: string;
   userEmail?: string;
   userCountry?: string;
+  userOrganization?: string;
   submittedAt: string;
+  status?: string;
+  suggested_prompt?: string;
 }
 
 export interface UserInfo {
   name: string;
   email: string;
   country: string;
+  organization: string;
   gdprConsent: boolean;
 }
 
@@ -60,46 +64,136 @@ export const airtableService = {
   async submitAnswers(
     answers: { questionId: string; question: string; answer: string }[],
     userInfo: UserInfo
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; recordIds?: string[] }> {
     try {
-      const records = answers.map((answer) => ({
+      const validAnswers = answers.filter(
+        (answer) => answer.answer && answer.answer.trim() !== ""
+      );
+
+      if (validAnswers.length === 0) {
+        console.error("No valid answers to submit");
+        return { success: false };
+      }
+
+      const records = validAnswers.map((answer) => ({
         fields: {
           questionId: answer.questionId,
           question: answer.question,
-          answer: answer.answer,
+          answer: answer.answer.trim(),
           userName: userInfo.name,
           userEmail: userInfo.email,
           userCountry: userInfo.country,
+          userOrganization: userInfo.organization,
           gdrp_consent: userInfo.gdprConsent ? "Yes" : "No",
           submittedAt: new Date().toISOString(),
+          status: "Pending",
+          suggested_prompt: "",
         },
       }));
 
-      await airtableApi.post("/Answers", { records });
-      return true;
+      console.log("Submitting answers:", records);
+      const response = await airtableApi.post("/Answers", { records });
+      console.log("Submission successful:", response.data);
+      
+      const recordIds = response.data.records.map((record: any) => record.id);
+      return { success: true, recordIds };
     } catch (error) {
       console.error("Error submitting answers:", error);
+      return { success: false };
+    }
+  },
+
+  async submitSingleAnswer(
+    answer: { questionId: string; question: string; answer: string },
+    userInfo: UserInfo
+  ): Promise<{ success: boolean; recordId?: string }> {
+    try {
+      if (!answer.answer || answer.answer.trim() === "") {
+        console.error("Empty answer cannot be submitted");
+        return { success: false };
+      }
+
+      const record = {
+        fields: {
+          questionId: answer.questionId,
+          question: answer.question,
+          answer: answer.answer.trim(),
+          userName: userInfo.name,
+          userEmail: userInfo.email,
+          userCountry: userInfo.country,
+          userOrganization: userInfo.organization,
+          gdrp_consent: userInfo.gdprConsent ? "Yes" : "No",
+          submittedAt: new Date().toISOString(),
+          status: "Pending",
+          suggested_prompt: "",
+        },
+      };
+
+      console.log("Submitting single answer:", record);
+      const response = await airtableApi.post("/Answers", { records: [record] });
+      console.log("Single answer submission successful:", response.data);
+      
+      const recordId = response.data.records[0].id;
+      return { success: true, recordId };
+    } catch (error) {
+      console.error("Error submitting single answer:", error);
+      return { success: false };
+    }
+  },
+
+  async updateAnswerWithCustomPrompt(
+    recordId: string,
+    customPrompt: string
+  ): Promise<boolean> {
+    try {
+      if (!customPrompt.trim()) {
+        console.error("Empty custom prompt cannot be submitted");
+        return false;
+      }
+
+      const updateData = {
+        fields: {
+          suggested_prompt: customPrompt.trim(),
+        },
+      };
+
+      console.log("Updating answer with custom prompt:", { recordId, customPrompt });
+      await airtableApi.patch(`/Answers/${recordId}`, updateData);
+      console.log("Custom prompt update successful");
+      return true;
+    } catch (error) {
+      console.error("Error updating answer with custom prompt:", error);
       return false;
     }
   },
 
+  // Add back the submitCustomPrompt method as a fallback
   async submitCustomPrompt(
     customPrompt: string,
     userInfo: UserInfo
   ): Promise<boolean> {
     try {
+      if (!customPrompt.trim()) {
+        console.error("Empty custom prompt cannot be submitted");
+        return false;
+      }
+
       const record = {
         fields: {
-          suggested_prompt: customPrompt,
+          suggested_prompt: customPrompt.trim(),
           userName: userInfo.name,
           userEmail: userInfo.email,
           userCountry: userInfo.country,
+          userOrganization: userInfo.organization,
           gdrp_consent: userInfo.gdprConsent ? "Yes" : "No",
           submittedAt: new Date().toISOString(),
+          status: "Pending",
         },
       };
 
-      await airtableApi.post("/Answers", { records: [record] });
+      console.log("Submitting custom prompt as new record:", record);
+      const response = await airtableApi.post("/Answers", { records: [record] });
+      console.log("Custom prompt submission successful:", response.data);
       return true;
     } catch (error) {
       console.error("Error submitting custom prompt:", error);
@@ -123,7 +217,10 @@ export const airtableService = {
         userName: record.fields.userName,
         userEmail: record.fields.userEmail,
         userCountry: record.fields.userCountry,
+        userOrganization: record.fields.userOrganization,
         submittedAt: record.fields.submittedAt,
+        status: record.fields.status || "Pending",
+        suggested_prompt: record.fields.suggested_prompt,
       }));
     } catch (error) {
       console.error("Error fetching answers:", error);

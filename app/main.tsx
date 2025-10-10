@@ -17,10 +17,10 @@ function MainPage() {
 
   return (
     <div className="relative md:max-h-screen overflow-hidden">
-      <img src={"/blue-vector.png"} className="absolute right-0 top-0 z-[1000] h-36 md:h-48"/>
+      <img src={"/blue-vector.svg"} className="absolute right-0 top-0 z-[1000] h-16 md:h-48"/>
    
       <UnifiedSurvey />
-      <img src={"/cyan-vector.png"} className="absolute left-0 md:-left-3 -bottom-14 z-[1000]  h-24 md:h-48"/>
+      <img src={"/cyan-vector.svg"} className="absolute left-0 md:-left-3 -bottom-14 z-[1000]  h-24 md:h-48"/>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export default function UnifiedSurvey() {
   const [userInfo, setUserInfo] = useState<UserInfo>({
     name: "",
     email: "",
+    organization: "",
     country: "",
     gdprConsent: false,
   });
@@ -32,6 +33,10 @@ export default function UnifiedSurvey() {
   const [currentAnswerPage, setCurrentAnswerPage] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [hasSubmittedBefore, setHasSubmittedBefore] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // NEW: Store the record IDs of submitted answers
+  const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
 
   const CHARACTER_LIMIT = 1000;
   const ANSWERS_PER_PAGE = 4;
@@ -50,23 +55,48 @@ export default function UnifiedSurvey() {
     });
   };
 
+  // Add validation function
+  const validateUserInfo = (): boolean => {
+    if (!userInfo.name.trim()) {
+      alert("Please enter your full name.");
+      return false;
+    }
+    
+    if (!userInfo.email.trim()) {
+      alert("Please enter your email address.");
+      return false;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userInfo.email)) {
+      alert("Please enter a valid email address.");
+      return false;
+    }
+    
+    if (!userInfo.gdprConsent) {
+      alert("Please agree to the privacy policy by checking the GDPR consent box.");
+      return false;
+    }
+    
+    return true;
+  };
+
   useEffect(() => {
     const c = containerRef.current;
     const thumb = thumbRef.current;
     if (!c || !thumb) return;
 
-    const MIN_THUMB_HEIGHT = 50; // keep it visible
+    const MIN_THUMB_HEIGHT = 50;
     const update = () => {
       const clientH = c.clientHeight;
       const scrollH = c.scrollHeight;
       const scrollTop = c.scrollTop;
 
-      // thumb height proportional to viewport vs content (clamped)
       let thumbH = Math.max(MIN_THUMB_HEIGHT, (clientH / scrollH) * clientH);
       thumbH = Math.min(clientH, thumbH);
       thumb.style.height = `${thumbH}px`;
 
-      // position
       const maxScroll = Math.max(0, scrollH - clientH);
       const maxThumbTop = Math.max(0, clientH - thumbH);
       const thumbTop =
@@ -74,14 +104,11 @@ export default function UnifiedSurvey() {
       thumb.style.transform = `translateY(${thumbTop}px)`;
     };
 
-    // initial
     update();
 
-    // listeners
     c.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
-    // if content length changes, update (observe children)
     const ro = new MutationObserver(update);
     ro.observe(c, { childList: true, subtree: true });
 
@@ -98,7 +125,6 @@ export default function UnifiedSurvey() {
   }, []);
 
   useEffect(() => {
-    // Update filtered answers when selected question changes
     if (selectedQuestion) {
       const filtered = approvedAnswers.filter(
         (answer) => answer.questionId === selectedQuestion
@@ -107,7 +133,7 @@ export default function UnifiedSurvey() {
     } else {
       setFilteredAnswers(approvedAnswers);
     }
-    setCurrentAnswerPage(0); // Reset to first page when filter changes
+    setCurrentAnswerPage(0);
   }, [selectedQuestion, approvedAnswers]);
 
   const loadQuestions = async () => {
@@ -125,7 +151,11 @@ export default function UnifiedSurvey() {
         airtableService.getAnswers(),
       ]);
 
-      const mergedAnswers = answersData.map((a) => {
+      const approvedAnswersData = answersData.filter(
+        (answer) => answer.status === "Approved"
+      );
+
+      const mergedAnswers = approvedAnswersData.map((a) => {
         const q = questionsData.find((q) => q.id === a.questionId);
         return {
           ...a,
@@ -142,7 +172,7 @@ export default function UnifiedSurvey() {
       );
 
       setApprovedAnswers(sorted);
-      setFilteredAnswers(sorted); // Initialize filtered answers with all answers
+      setFilteredAnswers(sorted);
     } catch (error) {
       console.error("Error loading answers:", error);
     } finally {
@@ -157,6 +187,14 @@ export default function UnifiedSurvey() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
+    // Validate user info before submitting
+    if (!validateUserInfo()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
     setSubmitting(true);
 
     const answersArray = questions
@@ -170,17 +208,22 @@ export default function UnifiedSurvey() {
     if (answersArray.length === 0) {
       alert("Please answer at least one question before submitting.");
       setSubmitting(false);
+      setIsSubmitting(false);
       return;
     }
 
-    const success = await airtableService.submitAnswers(answersArray, userInfo);
+    console.log("Submitting answers array:", answersArray);
+    const result = await airtableService.submitAnswers(answersArray, userInfo);
     setSubmitting(false);
+    setIsSubmitting(false);
 
-    if (success) {
-      // Mark that user has submitted before
+    if (result.success) {
+      // Store the record IDs for later use with custom prompt
+      if (result.recordIds) {
+        setSubmittedRecordIds(result.recordIds);
+      }
+      
       setHasSubmittedBefore(true);
-
-      // Show thank you block instead of going back to questions
       setShowUserForm(false);
       setShowThankYou(true);
       setAnswers({});
@@ -191,37 +234,57 @@ export default function UnifiedSurvey() {
   };
 
   const handleDirectSubmit = async () => {
-    if (!answers[questions[currentIndex]?.id]?.trim()) {
+    if (isSubmitting) return;
+    
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion || !answers[currentQuestion.id]?.trim()) {
       alert("Please write an answer before submitting.");
       return;
     }
 
+    // For direct submit, we need to check if we have user info already
+    if (!hasSubmittedBefore || !userInfo.gdprConsent) {
+      // If user hasn't submitted before or doesn't have GDPR consent, show form
+      setShowUserForm(true);
+      return;
+    }
+
+    // Validate user info for direct submit
+    if (!validateUserInfo()) {
+      setShowUserForm(true); // Show form so they can fix the info
+      return;
+    }
+
+    setIsSubmitting(true);
     setSubmitting(true);
 
-    const answerArray = [
-      {
-        questionId: questions[currentIndex].id,
-        question: questions[currentIndex].question,
-        answer: answers[questions[currentIndex].id],
-      },
-    ];
+    const answerData = {
+      questionId: currentQuestion.id,
+      question: currentQuestion.question,
+      answer: answers[currentQuestion.id],
+    };
 
-    const success = await airtableService.submitAnswers(answerArray, userInfo);
+    console.log("Submitting single answer:", answerData);
+    const result = await airtableService.submitSingleAnswer(answerData, userInfo);
     setSubmitting(false);
+    setIsSubmitting(false);
 
-    if (success) {
-      // Mark that user has submitted before
+    if (result.success) {
+      // Store the record ID for later use with custom prompt
+      if (result.recordId) {
+        setSubmittedRecordIds([result.recordId]);
+      }
+      
       setHasSubmittedBefore(true);
-
-      // Show thank you block
       setShowThankYou(true);
 
-      // Clear current answer and reload
+      // Clear current answer
       setAnswers((prev) => {
         const newAnswers = { ...prev };
-        delete newAnswers[questions[currentIndex].id];
+        delete newAnswers[currentQuestion.id];
         return newAnswers;
       });
+      
       loadApprovedAnswers();
     } else {
       alert("Failed to submit. Try again.");
@@ -237,26 +300,74 @@ export default function UnifiedSurvey() {
     setSubmittingCustomPrompt(true);
 
     try {
-      // Submit custom prompt to suggested_prompt field
-      const success = await airtableService.submitCustomPrompt(
-        customPrompt,
-        userInfo
-      );
+      let success = false;
+      
+      // Update ALL previously submitted records with the custom prompt
+      if (submittedRecordIds.length > 0) {
+        // Update all records with the same custom prompt
+        const updatePromises = submittedRecordIds.map(recordId =>
+          airtableService.updateAnswerWithCustomPrompt(recordId, customPrompt)
+        );
+        
+        const results = await Promise.all(updatePromises);
+        success = results.every(result => result === true);
+        
+        console.log(`Updated ${submittedRecordIds.length} records with custom prompt`);
+      } else {
+        // Fallback: create a new record if no previous records found
+        console.warn("No previous records found, creating new record for custom prompt");
+        success = await airtableService.submitCustomPrompt(customPrompt, userInfo);
+      }
 
       if (success) {
-        // Reset and go back to questions
         setShowThankYou(false);
         setCustomPrompt("");
+        setSubmittedRecordIds([]); // Reset record IDs
 
-        // Find next unanswered question
-        const nextUnansweredIndex = questions.findIndex(
-          (q, index) => index > currentIndex && !answers[q.id]?.trim()
-        );
+        const currentQuestionId = questions[currentIndex]?.id;
+        let nextIndex = -1;
 
-        if (nextUnansweredIndex !== -1) {
-          setCurrentIndex(nextUnansweredIndex);
+        if (currentQuestionId) {
+          const currentQuestionIndex = questions.findIndex(
+            (q) => q.id === currentQuestionId
+          );
+
+          for (let i = currentQuestionIndex + 1; i < questions.length; i++) {
+            if (!answers[questions[i].id]?.trim()) {
+              nextIndex = i;
+              break;
+            }
+          }
+
+          if (nextIndex === -1) {
+            for (let i = 0; i < questions.length; i++) {
+              if (!answers[questions[i].id]?.trim()) {
+                nextIndex = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (nextIndex !== -1) {
+          setCurrentIndex(nextIndex);
+          setTimeout(() => {
+            if (scrollRef.current) {
+              const cardWidth = scrollRef.current.clientWidth;
+              scrollRef.current.scrollTo({
+                left: nextIndex * cardWidth,
+                behavior: "smooth",
+              });
+            }
+          }, 100);
         } else {
           setCurrentIndex(0);
+          if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+              left: 0,
+              behavior: "smooth",
+            });
+          }
         }
 
         alert("Your custom prompt has been submitted successfully!");
@@ -291,7 +402,6 @@ export default function UnifiedSurvey() {
     return filteredAnswers;
   };
 
-  // Get paginated answers for slider
   const getPaginatedAnswers = () => {
     const startIndex = currentAnswerPage * ANSWERS_PER_PAGE;
     return getAllAnswers().slice(startIndex, startIndex + ANSWERS_PER_PAGE);
@@ -309,7 +419,6 @@ export default function UnifiedSurvey() {
     );
   };
 
-  // Function to handle question filter click
   const handleQuestionFilter = (questionId: string | null) => {
     setSelectedQuestion(questionId);
   };
@@ -322,11 +431,10 @@ export default function UnifiedSurvey() {
       <div className="relative w-full max-w-4xl mx-auto z-10">
         {/* Header with Logo */}
         <div className="flex flex-col mb-8">
-          <h1 className="text-[40px] font-bold mt-16 text-[#133844] font-georgia">
+          <h1 className="md:text-[40px] text-[20px] md:mt-0 font-bold mt-12 text-[#133844] font-serif">
             Ready to prompt the future?
           </h1>
-          <hr className="border-t-2 border-white/20 my-4" />
-          <p className="mt-2 text-start text-[18px] font-normal text-[#133844] font-georgia">
+          <p className="mt-2 text-start text-[18px] font-normal text-[#133844] font-open-sans">
             This is the start of a global discussion. Share your thoughts and
             see what others have to say.
           </p>
@@ -349,47 +457,46 @@ export default function UnifiedSurvey() {
               {/* PROMPT CARDS SLIDER OR USER FORM OR THANK YOU */}
               <div className="mb-6">
                 <div className="mb-6 relative">
-                  {/* Scroll Buttons */}
-                  <button
-                    onClick={() => handleScrollClick("left")}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-[100] bg-white/70 hover:bg-white text-[#133844] shadow-md rounded-full p-2 transition-all"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+                  {/* Scroll Buttons - Only show when on question cards (not user form or thank you) */}
+                  {!showUserForm && !showThankYou && (
+                    <>
+                      <button
+                        onClick={() => handleScrollClick("left")}
+                        className="absolute -left-12 top-1/2 -translate-y-1/2 z-[100] bg-white/70 hover:bg-white text-[#133844] shadow-md rounded-full p-2 transition-all md:block hidden"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
 
-                  <button
-                    onClick={() => handleScrollClick("right")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white/70 hover:bg-white text-[#133844] shadow-md rounded-full p-2 transition-all"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                      <button
+                        onClick={() => handleScrollClick("right")}
+                        className="absolute right-12 top-1/2 -translate-y-1/2 z-20 bg-white/70 hover:bg-white text-[#133844] shadow-md rounded-full p-2 transition-all md:block hidden"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
 
                   {/* Scrollable Cards Container */}
                   <div
                     ref={scrollRef}
-                    className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-4 px-10"
+                    className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-4"
                   >
                     {showUserForm ? (
-                      // ==================== USER FORM ====================
+                      // USER FORM
                       <div className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[55vw] lg:w-[45vw] xl:w-[35vw] bg-[#D7FDF5] rounded-2xl p-4 border border-white/10">
                         <div className="flex-shrink-0 w-full bg-white/20 backdrop-blur-[30px] rounded-2xl p-4 border border-white/40 shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]">
                           <div className="space-y-4">
-                            <div className="flex items-center justify-start mb-6">
-                              <span className="text-[14px] font-bold text-[#000000] font-arial">
-                                Almost Done!
-                              </span>
-                            </div>
+                            
 
                             <div className="mb-6">
-                              <h2 className="text-[14px] font-normal text-[#000000] text-start font-georgia">
-                                Please provide your details to complete the
-                                submission
+                              <h2 className="text-[14px] font-normal text-[#000000] text-start font-serif">
+                                Please provide your details to complete the submission.
                               </h2>
                             </div>
                             <hr className="border-t-1 border-[#133844]" />
 
                             <div className="space-y-6">
-                              {/* Full Name */}
+                              {/* Form fields */}
                               <div>
                                 <input
                                   type="text"
@@ -401,11 +508,10 @@ export default function UnifiedSurvey() {
                                     })
                                   }
                                   className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
-                                  placeholder="Enter Full Name"
+                                  placeholder="Enter Full Name *"
                                 />
                               </div>
 
-                              {/* Email */}
                               <div>
                                 <input
                                   type="email"
@@ -417,15 +523,11 @@ export default function UnifiedSurvey() {
                                     })
                                   }
                                   className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
-                                  placeholder="Enter Email"
+                                  placeholder="Enter Email *"
                                 />
                               </div>
 
-                              {/* Country */}
                               <div>
-                                <label className="block text-[12px] font-normal font-georgia text-[#000000] mb-1 ml-1">
-                                  Country
-                                </label>
                                 <input
                                   type="text"
                                   value={userInfo.country}
@@ -440,7 +542,21 @@ export default function UnifiedSurvey() {
                                 />
                               </div>
 
-                              {/* GDPR */}
+                              <div>
+                                <input
+                                  type="text"
+                                  value={userInfo.organization}
+                                  onChange={(e) =>
+                                    setUserInfo({
+                                      ...userInfo,
+                                      organization: e.target.value,
+                                    })
+                                  }
+                                  className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
+                                  placeholder="Organization"
+                                />
+                              </div>
+
                               <div className="flex items-start gap-3 pt-2">
                                 <input
                                   type="checkbox"
@@ -456,25 +572,24 @@ export default function UnifiedSurvey() {
                                 />
                                 <label
                                   htmlFor="gdpr"
-                                  className="text-[12px] font-normal font-georgia text-[#000000] leading-relaxed text-left mt-1"
+                                  className="text-[12px] font-normal font-serif text-[#000000] leading-relaxed text-left mt-1"
                                 >
                                   By clicking submit, you agree to our privacy
-                                  policy.
+                                  policy. *
                                 </label>
                               </div>
                             </div>
 
-                            {/* Submit */}
                             <div className="flex justify-end pt-6">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (!submitting && userInfo.gdprConsent)
+                                  if (!submitting && !isSubmitting)
                                     handleSubmit();
                                 }}
-                                disabled={submitting || !userInfo.gdprConsent}
+                                disabled={submitting || isSubmitting}
                                 className={`transition-all ${
-                                  submitting || !userInfo.gdprConsent
+                                  submitting || isSubmitting
                                     ? "opacity-50 cursor-not-allowed"
                                     : "cursor-pointer"
                                 }`}
@@ -490,21 +605,20 @@ export default function UnifiedSurvey() {
                         </div>
                       </div>
                     ) : showThankYou ? (
-                      // ==================== THANK YOU ====================
+                      // THANK YOU
                       <div className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[55vw] lg:w-[45vw] xl:w-[35vw] bg-white/20 backdrop-blur-[30px] rounded-2xl p-4 border border-white/40 shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]">
                         <div className="flex items-center justify-start mb-6">
-                          <span className="text-[14px] font-bold text-[#000000] font-arial">
+                          <span className="text-[14px] font-bold text-[#000000] font-open-sans">
                             Thank You!
                           </span>
                         </div>
 
                         <div className="mb-6">
-                          <h2 className="text-[14px] font-normal text-[#000000] text-start font-georgia">
+                          <h2 className="text-[14px] font-normal text-[#000000] text-start font-serif">
                             THANK YOU FOR YOUR ANSWERS
                           </h2>
-                          <p className="text-[14px] font-normal text-[#000000] text-start font-georgia mt-4">
-                            Do you have a prompt of your own that you would like
-                            the world to answer?
+                          <p className="text-[14px] font-normal text-[#000000] text-start font-serif mt-4">
+                            Do you have a prompt of your own that you would like the world to answer?
                           </p>
                         </div>
                         <hr className="border-t-1 border-[#133844]" />
@@ -515,7 +629,7 @@ export default function UnifiedSurvey() {
                               value={customPrompt}
                               onChange={(e) => setCustomPrompt(e.target.value)}
                               placeholder="Type your answer here"
-                              className="w-full h-32 sm:h-40 p-4 cursor-pointer text-[#000000] placeholder-[#000000] resize-none outline-none text-lg"
+                              className="w-full h-32 sm:h-40 p-4 text-[#000000] placeholder-[#000000] resize-none outline-none text-lg"
                             />
                           </div>
 
@@ -545,7 +659,7 @@ export default function UnifiedSurvey() {
                         </div>
                       </div>
                     ) : (
-                      // ==================== PROMPT CARDS ====================
+                      // PROMPT CARDS
                       questions.map((question, index) => (
                         <div
                           key={question.id}
@@ -554,90 +668,73 @@ export default function UnifiedSurvey() {
                 shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]
                 ${index === currentIndex ? "ring-2 ring-white/30" : ""}`}
                         >
-                          <div className="flex items-center justify-between mb-6 gap-4">
-                            <button
-                              onClick={prevQuestion}
-                              disabled={currentIndex === 0}
-                              className={`p-2 rounded-full transition-all duration-300 ${
-                                currentIndex === 0
-                                  ? "text-gray-400 cursor-not-allowed opacity-50"
-                                  : "text-[#133844] hover:bg-[#133844] hover:text-white cursor-pointer"
-                              }`}
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </button>
+                          <div className="">
+                            
 
-                            <span className="text-[14px] font-bold text-[#000000] font-arial">
-                              Prompt {index + 1} of {questions.length}
+                            <span className="text-[14px] font-bold text-[#000000] font-open-sans">
+                              PROMPT {index + 1}
                             </span>
 
-                            <button
-                              onClick={nextQuestion}
-                              disabled={currentIndex === questions.length - 1}
-                              className={`p-2 rounded-full transition-all duration-300 ${
-                                currentIndex === questions.length - 1
-                                  ? "text-gray-400 cursor-not-allowed opacity-50"
-                                  : "text-[#133844] hover:bg-[#133844] hover:text-white cursor-pointer"
-                              }`}
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
+                           
                           </div>
 
                           <div className="mb-6">
-                            <h2 className="text-[14px] font-normal text-[#000000] text-start font-georgia">
+                            <h2 className="text-[14px] font-normal text-[#000000] text-start font-serif mt-2">
                               {question.question}
                             </h2>
                           </div>
                           <hr className="border-t-1 border-[#133844]" />
 
                           <div className="relative">
-                            <div className="p-1 relative">
-                              <textarea
-                                value={answers[question.id] || ""}
-                                onChange={(e) =>
-                                  handleAnswerChange(
-                                    question.id,
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Type your prompt here..."
-                                className="w-full h-32 sm:h-40 p-4 cursor-pointer text-[#000000] placeholder-[#000000] resize-none outline-none text-lg"
-                              />
-                            </div>
+  <div className="p-1 relative">
+    <div className="relative">
+      <textarea
+        value={answers[question.id] || ""}
+        onChange={(e) =>
+          handleAnswerChange(
+            question.id,
+            e.target.value
+          )
+        }
+        placeholder="Type your answer here..."
+        className="w-full h-32 sm:h-40 px-0 py-4 text-[#000000] placeholder-[#000000] resize-none outline-none text-[18px] font-normal pl-2 font-open-sans"
+      />
+      <div className="absolute -left-1 top-4 w-[1px] h-[25px] bg-[#133844]"></div>
+    </div>
+  </div>
 
-                            <div className="flex justify-between items-center mt-2 px-1">
-                              <div className="text-sm text-[#133844]">
-                                {answers[question.id]?.length || 0} /{" "}
-                                {CHARACTER_LIMIT}
-                              </div>
+  <div className="flex justify-between items-center mt-2 px-1">
+    <div className="text-sm text-[#133844]">
+      {answers[question.id]?.length || 0} /{" "}
+      {CHARACTER_LIMIT}
+    </div>
 
-                              <button
-                                onClick={() => {
-                                  if (
-                                    hasSubmittedBefore &&
-                                    userInfo.gdprConsent
-                                  ) {
-                                    handleDirectSubmit();
-                                  } else {
-                                    setShowUserForm(true);
-                                  }
-                                }}
-                                disabled={!answers[question.id]?.trim()}
-                                className="p-2"
-                              >
-                                <img
-                                  src="/finish.svg"
-                                  alt="Submit"
-                                  className={`w-6 h-6 transition-all duration-300 ${
-                                    answers[question.id]?.trim()
-                                      ? "cursor-pointer hover:opacity-80"
-                                      : "opacity-50 cursor-not-allowed"
-                                  }`}
-                                />
-                              </button>
-                            </div>
-                          </div>
+    <button
+      onClick={() => {
+        if (
+          hasSubmittedBefore &&
+          userInfo.gdprConsent
+        ) {
+          handleDirectSubmit();
+        } else {
+          setShowUserForm(true);
+        }
+      }}
+      disabled={!answers[question.id]?.trim() || isSubmitting}
+      className="p-2"
+    >
+      <img
+        src="/finish.svg"
+        alt="Submit"
+        className={`w-6 h-6 transition-all duration-300 ${
+          answers[question.id]?.trim() && !isSubmitting
+            ? "cursor-pointer hover:opacity-80"
+            : "opacity-50 cursor-not-allowed"
+        }`}
+      />
+    </button>
+  </div>
+</div>
                         </div>
                       ))
                     )}
@@ -645,22 +742,21 @@ export default function UnifiedSurvey() {
                 </div>
               </div>
 
-              {/* TWO COLUMN LAYOUT */}
+              {/* Rest of the component remains the same */}
               <div className="lg:flex lg:gap-6">
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[14px] font-bold font-arial text-[#133844]">
+                    <h3 className="text-[14px] font-bold font-open-sans text-[#133844]">
                       View by prompt
                     </h3>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    {/* Individual Question Badges */}
                     {questions.map((question, index) => (
                       <button
                         key={question.id}
                         onClick={() => handleQuestionFilter(question.id)}
-                        className={`px-3 py-2 rounded-full text-[12px] cursor-pointer font-normal font-arial transition-all duration-300 ${
+                        className={`px-3 py-2 rounded-full text-[12px] cursor-pointer font-normal font-open-sans transition-all duration-300 ${
                           selectedQuestion === question.id
                             ? "bg-[#133844] text-[#FFFFFF] shadow-lg"
                             : "bg-[#00BDB6] text-[#FFFFFF]"
@@ -674,25 +770,22 @@ export default function UnifiedSurvey() {
 
                 {/* RIGHT COLUMN - COMMUNITY RESPONSES (70%) */}
                 <div className="lg:w-[70%] mb-12 md:mb-0 relative">
-                  {/* Answers List - Fixed Height with visible scrollbar */}
                   <div
                     ref={containerRef}
                     className="space-y-0 h-84 overflow-y-auto custom-scrollbar hide-native-scrollbar  pr-8 md:pr-14"
                   >
-                    <div className="absolute h-96 w-[5px] bg-[#00BDB6]/20 right-[5px] hover:right-[8px] -z-3" />
+                    <div className="absolute h-84 w-[5px] bg-[#00BDB6]/20 right-[5px] hover:right-[8px] -z-3" />
                     {filteredAnswers.length > 0 ? (
                       filteredAnswers.map((answer, index) => (
                         <div
                           key={answer.id}
-                          className="p-4 border-b-[0.5] border-[#133844] last:border-b-0"
+                          className="px-0 py-4 border-b-[0.5] border-[#133844] last:border-b-0"
                         >
-                          {/* Answer Text */}
-                          <p className="text-[#133844] font-normal text-[14px] mb-2 font-georgia ">
+                          <p className="text-[#133844] font-normal text-[14px] mb-2 font-serif ">
                             {answer.answer}
                           </p>
-
-                          {/* User Info - Country and Date */}
-                          <div className="text-[14px] text-[#133844] font-bold flex justify-between font-arial">
+                          
+                          <div className="text-[14px] text-[#133844] font-bold flex justify-between font-open-sans">
                             <span>
                               {answer.userName
                                 ? answer.userName

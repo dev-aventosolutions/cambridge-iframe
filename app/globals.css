@@ -24,12 +24,12 @@ body {
   color: var(--foreground);
 }
 /* Define the font classes */
-.font-georgia {
-  font-family: Georgia;
+.font-serif {
+  font-family: serif;
 }
 
-.font-arial {
-  font-family: Arial;
+.font-open-sans {
+  font-family: 'Open Sans', sans-serif;
 }
 
 /* custom checkbox */
