@@ -22,5 +22,12 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+/* Define the font classes */
+.font-georgia {
+  font-family: Georgia;
+}
+
+.font-arial {
+  font-family: Arial;
 }
