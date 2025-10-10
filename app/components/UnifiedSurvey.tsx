@@ -356,7 +356,7 @@ export default function UnifiedSurvey() {
                                       : "Anonymous"}
                                   </span>
                                   <span className="text-[14px] font-bold text-[#133844] bg-[#D7FDF5] px-2 py-1 rounded-full font-arial">
-                                    Topic {answer.questionNumber || "?"}
+                                    Prompt {answer.questionNumber || "?"}
                                   </span>
                                 </div>
                               </div>
@@ -400,7 +400,7 @@ export default function UnifiedSurvey() {
                   <div className="mb-6 mt-6 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-[14px] font-bold font-arial text-[#D7FDF5]">
-                        View by topic
+                        View by prompt
                       </h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -413,7 +413,7 @@ export default function UnifiedSurvey() {
                             : "bg-[#8EE8D8] text-[#133844]"
                         }`}
                       >
-                        All Questions
+                        All prompts
                       </button>
 
                       {/* Individual Question Badges */}
