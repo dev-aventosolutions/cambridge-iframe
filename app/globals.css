@@ -32,6 +32,15 @@ body {
   font-family: 'Open Sans', sans-serif;
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
 /* custom checkbox */
 
 /* === Custom Checkbox Style === */

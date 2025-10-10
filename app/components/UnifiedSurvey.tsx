@@ -479,7 +479,7 @@ export default function UnifiedSurvey() {
                   {/* Scrollable Cards Container */}
                   <div
                     ref={scrollRef}
-                    className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-4"
+                    className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-4 hide-scrollbar"
                   >
                     {showUserForm ? (
                       // USER FORM
