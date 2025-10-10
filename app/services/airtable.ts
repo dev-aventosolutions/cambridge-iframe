@@ -26,7 +26,7 @@ export interface Answer {
   userName?: string;
   userEmail?: string;
   userCountry?: string;
-  submittedAt: string; // ✅ Main timestamp to sort by
+  submittedAt: string;
 }
 
 export interface UserInfo {
@@ -45,7 +45,6 @@ export const airtableService = {
         },
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return response.data.records.map((record: any) => ({
         id: record.id,
         question: record.fields.question,
@@ -72,7 +71,7 @@ export const airtableService = {
           userEmail: userInfo.email,
           userCountry: userInfo.country,
           gdrp_consent: userInfo.gdprConsent ? "Yes" : "No",
-          submittedAt: new Date().toISOString(), // ✅ Use this only
+          submittedAt: new Date().toISOString(),
         },
       }));
 
@@ -84,15 +83,38 @@ export const airtableService = {
     }
   },
 
+  async submitCustomPrompt(
+    customPrompt: string,
+    userInfo: UserInfo
+  ): Promise<boolean> {
+    try {
+      const record = {
+        fields: {
+          suggested_prompt: customPrompt,
+          userName: userInfo.name,
+          userEmail: userInfo.email,
+          userCountry: userInfo.country,
+          gdrp_consent: userInfo.gdprConsent ? "Yes" : "No",
+          submittedAt: new Date().toISOString(),
+        },
+      };
+
+      await airtableApi.post("/Answers", { records: [record] });
+      return true;
+    } catch (error) {
+      console.error("Error submitting custom prompt:", error);
+      return false;
+    }
+  },
+
   async getAnswers(): Promise<Answer[]> {
     try {
       const response = await airtableApi.get("/Answers", {
         params: {
-          sort: [{ field: "submittedAt", direction: "desc" }], // ✅ Sort by submittedAt
+          sort: [{ field: "submittedAt", direction: "desc" }],
         },
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return response.data.records.map((record: any) => ({
         id: record.id,
         questionId: record.fields.questionId,

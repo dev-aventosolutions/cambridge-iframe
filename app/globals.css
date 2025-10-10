@@ -31,3 +31,87 @@ body {
 .font-arial {
   font-family: Arial;
 }
+
+/* custom checkbox */
+
+/* === Custom Checkbox Style === */
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 25px;
+  height: 25px;
+  background-color: #8EE8D8; /* teal when unchecked */
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Checked state */
+.custom-checkbox:checked {
+  background-color: #00BDB6; /* solid teal when checked */
+}
+
+/* White tick when checked */
+.custom-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+/* Optional focus outline */
+.custom-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 189, 182, 0.3);
+}
+
+
+/* hide native scrollbar completely (we will draw our own) */
+.hide-native-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.hide-native-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* the visual floating thumb */
+.custom-thumb {
+  position: absolute;
+  top: 0;
+  right: -4px;              /* control horizontal offset */
+  width: 25px;             /* THICKNESS you asked for */
+  border-radius: 12px;
+  background: #00BDB6;
+  min-height: 70px;        /* visible size for short content */
+  transform: translateY(0);
+  transition: transform 0.08s linear;
+  z-index: 50;
+  pointer-events: none;    /* won't block clicks inside scroll area */
+}
+
+/* optional shadow to make it "float" */
+.custom-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-radius: 12px;
+}
+
+/* keep track area transparent */
+.custom-scrollbar-track-fake { /* if you need a track visual */
+  position: absolute;
+  top: 0; right: 10px;
+  height: 100%;
+  width: 25px;
+  pointer-events: none;
+  /* background: rgba(0,0,0,0.02);  optional */
+}
