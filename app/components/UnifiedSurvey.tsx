@@ -441,7 +441,7 @@ export default function UnifiedSurvey() {
   return (
     <div
       className="min-h-screen w-full bg-fill relative px-4 sm:px-6 md:px-10 py-6
-             bg-[url('/web.jpg')] md:bg-[url('/web.jpg')]"
+             bg-[url('/mobilebg.jpg')] md:bg-[url('/webbg.jpg')]"
     >
       <div className="relative w-full max-w-4xl mx-auto z-10">
         {/* Header with Logo */}
