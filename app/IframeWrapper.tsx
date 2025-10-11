@@ -8,15 +8,13 @@ export default function IframeWrapper() {
   useEffect(() => {
     const allowedOrigins = ['https://alphalogisticspk.com'];
 
-    // window.top ko null check ke saath
-    if (window.top && window !== window.top) { // agar iframe ke andar hai
+    if (window.top && window !== window.top) { 
       try {
         const parentOrigin = window.top.location.origin;
         if (!allowedOrigins.includes(parentOrigin)) {
           setAuthorized(false);
         }
       } catch {
-        // agar cross-origin error aaye
         setAuthorized(false);
       }
     }

@@ -13,14 +13,23 @@ function MainPage() {
     }
   }, []);
 
-  // Always show the unified survey now
-
   return (
-    <div className="relative md:max-h-screen overflow-hidden">
-      <img src={"/blue-vector.svg"} className="absolute right-0 top-0 z-[1000] h-16 md:h-48"/>
-   
+    <div className="relative md:max-h-auto overflow-hidden">
+      <img
+        src={"/blue-vector.svg"}
+        alt="Blue Vector"
+        className="absolute right-0 top-0 z-[1000] 
+          h-12 w-auto sm:h-16 md:h-20 lg:h-32"
+      />
+
       <UnifiedSurvey />
-      <img src={"/cyan-vector.svg"} className="absolute left-0 md:-left-3 -bottom-14 z-[1000]  h-24 md:h-48"/>
+
+      <img
+        src={"/cyan-vector.svg"}
+        alt="Cyan Vector"
+        className="absolute left-0 md:-left-3 -bottom-10 z-[1000] 
+          h-16 w-auto sm:h-20 md:h-24 lg:h-32"
+      />
     </div>
   );
 }

@@ -19,11 +19,63 @@
   }
 }
 
+/* ===================== Value Serif ===================== */
+@font-face {
+  font-family: "Value Serif";
+  src: url("/fonts/ValueSerif-Regular-Pro.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Value Serif";
+  src: url("/fonts/ValueSerif-Bold-Pro.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* ===================== Open Sans ===================== */
+@font-face {
+  font-family: "Open Sans";
+  src: url("/fonts/OpenSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Open Sans";
+  src: url("/fonts/OpenSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* === Font Utility Classes === */
+.font-value-regular {
+  font-family: "Value Serif", serif;
+  font-weight: 400;
+}
+
+.font-value-bold {
+  font-family: "Value Serif ", serif;
+  font-weight: 700;
+}
+
+.font-open-regular {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 400;
+}
+
+.font-open-bold {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 700;
+}
+
+
+
 body {
   background: var(--background);
   color: var(--foreground);
 }
-/* Define the font classes */
 .font-serif {
   font-family: serif;
 }
@@ -33,15 +85,13 @@ body {
 }
 
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;     
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none; 
 }
-
-/* custom checkbox */
 
 /* === Custom Checkbox Style === */
 .custom-checkbox {
@@ -49,7 +99,7 @@ body {
   -webkit-appearance: none;
   width: 25px;
   height: 25px;
-  background-color: #8EE8D8; /* teal when unchecked */
+  background-color: #8EE8D8; 
   border: none;
   cursor: pointer;
   position: relative;
@@ -58,7 +108,7 @@ body {
 
 /* Checked state */
 .custom-checkbox:checked {
-  background-color: #00BDB6; /* solid teal when checked */
+  background-color: #00BDB6; 
 }
 
 /* White tick when checked */
@@ -87,23 +137,23 @@ body {
   height: 0;
 }
 .hide-native-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
 /* the visual floating thumb */
 .custom-thumb {
   position: absolute;
   top: 0;
-  right: -4px;              /* control horizontal offset */
-  width: 25px;             /* THICKNESS you asked for */
+  right: -4px;              
+  width: 25px;             
   border-radius: 12px;
   background: #00BDB6;
-  min-height: 70px;        /* visible size for short content */
+  min-height: 70px;        
   transform: translateY(0);
   transition: transform 0.08s linear;
   z-index: 50;
-  pointer-events: none;    /* won't block clicks inside scroll area */
+  pointer-events: none;    
 }
 
 /* optional shadow to make it "float" */
@@ -116,11 +166,12 @@ body {
 }
 
 /* keep track area transparent */
-.custom-scrollbar-track-fake { /* if you need a track visual */
+.custom-scrollbar-track-fake { 
   position: absolute;
   top: 0; right: 10px;
   height: 100%;
   width: 25px;
   pointer-events: none;
-  /* background: rgba(0,0,0,0.02);  optional */
 }
+
+
