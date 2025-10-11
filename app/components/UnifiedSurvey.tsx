@@ -823,12 +823,12 @@ export default function UnifiedSurvey() {
                         <div
                           key={question.id}
                           className={`flex-shrink-0 w-[85%] md:w-[88%] 
-                            bg-white/20 backdrop-blur-[30px] border-2 rounded-2xl p-4 
+                            bg-white/20 backdrop-blur-[30px] rounded-2xl p-4 
                             shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]
                             transition-all duration-300 min-h-[233px] mr-4
                             ${
                               index === currentIndex
-                                ? "opacity-100 scale-100 shadow-lg"
+                                ? "opacity-100 scale-100"
                                 : "opacity-90 scale-[0.98]"
                             }`}
                           style={{
