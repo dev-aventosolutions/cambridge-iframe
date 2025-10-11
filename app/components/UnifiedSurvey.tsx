@@ -46,23 +46,51 @@ export default function UnifiedSurvey() {
   const thumbRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // FIXED: Use a ref to track the current index for navigation
+  const currentIndexRef = useRef(0);
+
+  // Track if user is manually scrolling to prevent conflicts
+  const isManualScrollRef = useRef(false);
+
+  // Update the ref whenever currentIndex changes
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
   const handleScrollClick = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
-    
+
     const container = scrollRef.current;
     const cardWidth = container.clientWidth * 0.85; // 85% of container width (15% peek)
     const scrollAmount = direction === "left" ? -cardWidth : cardWidth;
-    
+
     const newScrollLeft = container.scrollLeft + scrollAmount;
     const maxScrollLeft = container.scrollWidth - container.clientWidth;
-    
+
     // Ensure we don't scroll beyond boundaries
-    const boundedScrollLeft = Math.max(0, Math.min(newScrollLeft, maxScrollLeft));
+    const boundedScrollLeft = Math.max(
+      0,
+      Math.min(newScrollLeft, maxScrollLeft)
+    );
+
+    // Set manual scroll flag
+    isManualScrollRef.current = true;
     
     container.scrollTo({
       left: boundedScrollLeft,
       behavior: "smooth",
     });
+
+    // Calculate new index based on scroll position
+    const newIndex = Math.round(boundedScrollLeft / cardWidth);
+    if (newIndex !== currentIndex && newIndex >= 0 && newIndex < questions.length) {
+      setCurrentIndex(newIndex);
+    }
+
+    // Reset manual scroll flag after animation
+    setTimeout(() => {
+      isManualScrollRef.current = false;
+    }, 500);
   };
 
   // Add validation function
@@ -257,6 +285,16 @@ export default function UnifiedSurvey() {
       setShowThankYou(true);
       setAnswers({});
       loadApprovedAnswers();
+
+      // FIXED: Use the ref to get current index and navigate
+      const currentIdx = currentIndexRef.current;
+      const nextIndex = (currentIdx + 1) % questions.length;
+      console.log(
+        `Form submit: Navigating from question ${currentIdx + 1} to question ${
+          nextIndex + 1
+        }`
+      );
+      setCurrentIndex(nextIndex);
     } else {
       alert("Failed to submit. Try again.");
     }
@@ -318,6 +356,16 @@ export default function UnifiedSurvey() {
       });
 
       loadApprovedAnswers();
+
+      // FIXED: Use the ref to get current index and navigate
+      const currentIdx = currentIndexRef.current;
+      const nextIndex = (currentIdx + 1) % questions.length;
+      console.log(
+        `Direct submit: Navigating from question ${
+          currentIdx + 1
+        } to question ${nextIndex + 1}`
+      );
+      setCurrentIndex(nextIndex);
     } else {
       alert("Failed to submit. Try again.");
     }
@@ -363,8 +411,15 @@ export default function UnifiedSurvey() {
         setCustomPrompt("");
         setSubmittedRecordIds([]); // Reset record IDs
 
-        // Navigate to next unanswered question
-        navigateToNextUnansweredQuestion();
+        // FIXED: Use the ref to get current index and navigate
+        const currentIdx = currentIndexRef.current;
+        const nextIndex = (currentIdx + 1) % questions.length;
+        console.log(
+          `Custom prompt: Navigating from question ${
+            currentIdx + 1
+          } to question ${nextIndex + 1}`
+        );
+        setCurrentIndex(nextIndex);
 
         alert("Your custom prompt has been submitted successfully!");
       } else {
@@ -378,41 +433,19 @@ export default function UnifiedSurvey() {
     }
   };
 
-  const navigateToNextUnansweredQuestion = () => {
-    let nextIndex = -1;
-
-    // Find the next unanswered question starting from current index
-    for (let i = currentIndex + 1; i < questions.length; i++) {
-      if (!answers[questions[i].id]?.trim()) {
-        nextIndex = i;
-        break;
-      }
-    }
-
-    // If no unanswered questions found after current, search from beginning
-    if (nextIndex === -1) {
-      for (let i = 0; i < questions.length; i++) {
-        if (!answers[questions[i].id]?.trim()) {
-          nextIndex = i;
-          break;
-        }
-      }
-    }
-
-    // If still no unanswered questions found, go to the next question in sequence
-    if (nextIndex === -1) {
-      nextIndex = (currentIndex + 1) % questions.length;
-    }
-
-    setCurrentIndex(nextIndex);
-  };
-
   const handleCloseThankYou = () => {
     setShowThankYou(false);
     setCustomPrompt("");
-    
-    // Navigate to next unanswered question when closing thank you
-    navigateToNextUnansweredQuestion();
+
+    // FIXED: Use the ref to get current index and navigate
+    const currentIdx = currentIndexRef.current;
+    const nextIndex = (currentIdx + 1) % questions.length;
+    console.log(
+      `Close thank you: Navigating from question ${
+        currentIdx + 1
+      } to question ${nextIndex + 1}`
+    );
+    setCurrentIndex(nextIndex);
   };
 
   const handleCloseForm = () => {
@@ -460,15 +493,16 @@ export default function UnifiedSurvey() {
     setSelectedQuestion(questionId);
   };
 
-  // Handle scroll to update current index
+  // Handle scroll to update current index - COMPLETELY REWRITTEN
   const handleScroll = () => {
-    if (!scrollRef.current) return;
-    
+    if (!scrollRef.current || showUserForm || showThankYou || isManualScrollRef.current) return;
+
     const scrollLeft = scrollRef.current.scrollLeft;
     const cardWidth = scrollRef.current.clientWidth * 0.85; // 85% of container width (15% peek)
     const newIndex = Math.round(scrollLeft / cardWidth);
-    
+
     if (newIndex !== currentIndex && newIndex >= 0 && newIndex < questions.length) {
+      console.log(`Scroll: Updating current index from ${currentIndex} to ${newIndex}`);
       setCurrentIndex(newIndex);
     }
   };
@@ -476,21 +510,48 @@ export default function UnifiedSurvey() {
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll, { passive: true });
-      return () => scrollElement.removeEventListener('scroll', handleScroll);
+      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
+      return () => scrollElement.removeEventListener("scroll", handleScroll);
     }
-  }, [questions.length]);
+  }, [questions.length, currentIndex, showUserForm, showThankYou]);
 
-  // Scroll to current index when it changes
+  // Scroll to current index when it changes - IMPROVED VERSION
   useEffect(() => {
-    if (scrollRef.current && !showUserForm && !showThankYou) {
-      const cardWidth = scrollRef.current.clientWidth * 0.85; // 85% of container width (15% peek)
-      scrollRef.current.scrollTo({
-        left: currentIndex * cardWidth,
-        behavior: 'smooth'
-      });
+    if (scrollRef.current && !showUserForm && !showThankYou && !isManualScrollRef.current) {
+      const cardWidth = scrollRef.current.clientWidth * 0.85;
+      const targetScroll = currentIndex * cardWidth;
+      
+      // Only scroll if we're significantly away from the target position
+      if (Math.abs(scrollRef.current.scrollLeft - targetScroll) > 10) {
+        console.log(`Scrolling to index ${currentIndex}, position ${targetScroll}`);
+        scrollRef.current.scrollTo({
+          left: targetScroll,
+          behavior: "smooth",
+        });
+      }
     }
   }, [currentIndex, showUserForm, showThankYou]);
+
+  // Handle dot click - IMPROVED VERSION
+  const handleDotClick = (index: number) => {
+    console.log(`Dot clicked: Navigating to index ${index}`);
+    setCurrentIndex(index);
+    
+    if (scrollRef.current) {
+      const cardWidth = scrollRef.current.clientWidth * 0.85;
+      const targetScroll = index * cardWidth;
+      
+      isManualScrollRef.current = true;
+      scrollRef.current.scrollTo({
+        left: targetScroll,
+        behavior: "smooth",
+      });
+
+      setTimeout(() => {
+        isManualScrollRef.current = false;
+      }, 500);
+    }
+  };
 
   // Check if buttons should be disabled
   const isPrevDisabled = currentIndex === 0;
@@ -568,7 +629,7 @@ export default function UnifiedSurvey() {
                   <div
                     ref={scrollRef}
                     className="flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 hide-scrollbar no-y-scroll"
-                    style={{ scrollBehavior: 'smooth' }}
+                    style={{ scrollBehavior: "smooth" }}
                   >
                     {showUserForm ? (
                       // USER FORM - Full width
@@ -709,12 +770,6 @@ export default function UnifiedSurvey() {
                           <X className="w-5 h-5" />
                         </button>
 
-                        {/* <div className="flex items-center justify-start mb-6">
-                          <span className="text-[14px] font-bold text-[#000000] font-open-sans">
-                            Thank You!
-                          </span>
-                        </div> */}
-
                         <div className="mb-6">
                           <h2 className="text-[12px] md:text-[14px] font-open-bold text-[#000000] text-start ">
                             THANK YOU FOR YOUR ANSWERS
@@ -732,10 +787,9 @@ export default function UnifiedSurvey() {
                               value={customPrompt}
                               onChange={(e) => setCustomPrompt(e.target.value)}
                               placeholder="Type your answer here"
-                              // className="w-full h-32 p-4 text-[#000000] placeholder-[#000000] resize-none outline-none font-open-regular text-[16px] md:text-[18px]"
                               className="w-full h-16 px-0 py-2 text-[#000000] placeholder-[#000000] resize-none outline-none font-open-regular text-[16px] md:text-[18px] pl-2"
-                              />
-                             <div className="absolute top-3 w-[1px] h-[25px] bg-[#133844]"></div>
+                            />
+                            <div className="absolute top-3 w-[1px] h-[25px] bg-[#133844]"></div>
                           </div>
 
                           <div className="flex justify-between items-center mt-2 px-1">
@@ -769,16 +823,16 @@ export default function UnifiedSurvey() {
                         <div
                           key={question.id}
                           className={`flex-shrink-0 w-[85%] md:w-[88%] 
-                            bg-white/20 backdrop-blur-[30px] border border-white/40 rounded-2xl p-4 
+                            bg-white/20 backdrop-blur-[30px] border-2 rounded-2xl p-4 
                             shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]
                             transition-all duration-300 min-h-[233px] mr-4
                             ${
-                              index === currentIndex 
-                                ? "opacity-100 scale-100 border-[#00BDB6] border-2" 
-                                : "opacity-70 scale-95"
+                              index === currentIndex
+                                ? "opacity-100 scale-100 shadow-lg"
+                                : "opacity-90 scale-[0.98]"
                             }`}
-                          style={{ 
-                            flex: '0 0 auto'
+                          style={{
+                            flex: "0 0 auto",
                           }}
                         >
                           <div className="">
@@ -860,7 +914,7 @@ export default function UnifiedSurvey() {
                       {questions.map((_, index) => (
                         <button
                           key={index}
-                          onClick={() => setCurrentIndex(index)}
+                          onClick={() => handleDotClick(index)}
                           className={`w-2 h-2 rounded-full transition-all ${
                             index === currentIndex
                               ? "bg-[#133844]"
@@ -882,12 +936,12 @@ export default function UnifiedSurvey() {
                       View by prompt
                     </h3>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-4">
                     {questions.map((question, index) => (
                       <button
                         key={question.id}
                         onClick={() => handleQuestionFilter(question.id)}
-                        className={`px-3 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
+                        className={`px-1 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
                           selectedQuestion === question.id
                             ? "bg-[#133844] text-[#FFFFFF] shadow-lg"
                             : "bg-[#00BDB6] text-[#FFFFFF]"
