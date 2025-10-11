@@ -8,8 +8,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono); */
+  --font-sans: 'Open Sans', sans-serif;
+  --font-serif: 'Value Serif', serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,19 +24,26 @@
 /* ===================== Value Serif ===================== */
 @font-face {
   font-family: "Value Serif";
-  src: url("/fonts/ValueSerif-Regular-Pro.ttf") format("truetype");
+  src: url("/fonts/ValueSerif-Regular-Pro.otf") format("truetype");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: "Value Serif";
-  src: url("/fonts/ValueSerif-Bold-Pro.ttf") format("truetype");
-  font-weight: 700;
+  src: url("/fonts/ValueSerif-Bold-Pro.otf") format("truetype");
+  font-weight: 800;
   font-style: normal;
 }
 
 /* ===================== Open Sans ===================== */
+@font-face {
+  font-family: "Open Sans";
+  src: url("/fonts/OpenSans-Light.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+
 @font-face {
   font-family: "Open Sans";
   src: url("/fonts/OpenSans-Regular.ttf") format("truetype");
@@ -45,7 +54,7 @@
 @font-face {
   font-family: "Open Sans";
   src: url("/fonts/OpenSans-Bold.ttf") format("truetype");
-  font-weight: 700;
+  font-weight: 800;
   font-style: normal;
 }
 
@@ -58,6 +67,11 @@
 .font-value-bold {
   font-family: "Value Serif ", serif;
   font-weight: 700;
+}
+
+.font-open-light {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 300;
 }
 
 .font-open-regular {

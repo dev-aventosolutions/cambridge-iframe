@@ -507,11 +507,11 @@ export default function UnifiedSurvey() {
           <h1 className="md:text-[42px] text-[21px] md:mt-0 font-value-bold mt-12 text-[#133844] ">
             Ready to prompt the future?
           </h1>
-          <p className="mt-2 text-start text-[13px] md:text-[18px] font-open-regular text-[#133844]">
+          <p className="mt-2 text-start text-[13px] md:text-[18px] font-open-light text-[#133844]">
             This is the start of a global discussion, and here are three prompts
             to get us started.
           </p>
-          <p className="text-start text-[13px] md:text-[18px] font-open-regular  text-[#133844] font-open-sans">
+          <p className="text-start text-[13px] md:text-[18px] font-open-light  text-[#133844]">
             Answer any that inspire you, or share you own.
           </p>
         </div>
@@ -583,7 +583,7 @@ export default function UnifiedSurvey() {
 
                         <div className="space-y-4">
                           <div className="mb-6">
-                            <h2 className="text-[14px] font-normal text-[#000000] text-start ">
+                            <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#000000] text-start ">
                               Please provide your details to complete the
                               submission.
                             </h2>
@@ -602,7 +602,7 @@ export default function UnifiedSurvey() {
                                     name: e.target.value,
                                   })
                                 }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
+                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
                                 placeholder="Enter Full Name *"
                               />
                             </div>
@@ -617,7 +617,7 @@ export default function UnifiedSurvey() {
                                     email: e.target.value,
                                   })
                                 }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
+                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
                                 placeholder="Enter Email *"
                               />
                             </div>
@@ -632,7 +632,7 @@ export default function UnifiedSurvey() {
                                     country: e.target.value,
                                   })
                                 }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
+                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
                                 placeholder="Enter Country"
                               />
                             </div>
@@ -647,7 +647,7 @@ export default function UnifiedSurvey() {
                                     organization: e.target.value,
                                   })
                                 }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#000000]/60 outline-none text-lg border-b-2 border-[#133844]/30"
+                                className="w-full p-2 bg-transparent text-[#133844] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
                                 placeholder="Organization"
                               />
                             </div>
@@ -667,7 +667,7 @@ export default function UnifiedSurvey() {
                               />
                               <label
                                 htmlFor="gdpr"
-                                className="text-[12px] font-normal  text-[#000000] leading-relaxed text-left mt-1"
+                                className="font-open-regular text-[10px] md:text-[14px]  text-[#133844]/80 leading-relaxed text-left mt-1"
                               >
                                 By clicking submit, you agree to our privacy
                                 policy. *
@@ -709,17 +709,17 @@ export default function UnifiedSurvey() {
                           <X className="w-5 h-5" />
                         </button>
 
-                        <div className="flex items-center justify-start mb-6">
+                        {/* <div className="flex items-center justify-start mb-6">
                           <span className="text-[14px] font-bold text-[#000000] font-open-sans">
                             Thank You!
                           </span>
-                        </div>
+                        </div> */}
 
                         <div className="mb-6">
-                          <h2 className="text-[14px] font-normal text-[#000000] text-start ">
+                          <h2 className="text-[12px] md:text-[14px] font-open-bold text-[#000000] text-start ">
                             THANK YOU FOR YOUR ANSWERS
                           </h2>
-                          <p className="text-[14px] font-normal text-[#000000] text-start  mt-4">
+                          <p className="text-[15px] md:text-[18px] font-value-regular text-[#000000] text-start  mt-4">
                             Do you have a prompt of your own that you would like
                             the world to answer?
                           </p>
@@ -732,12 +732,14 @@ export default function UnifiedSurvey() {
                               value={customPrompt}
                               onChange={(e) => setCustomPrompt(e.target.value)}
                               placeholder="Type your answer here"
-                              className="w-full h-32 p-4 text-[#000000] placeholder-[#000000] resize-none outline-none text-lg"
-                            />
+                              // className="w-full h-32 p-4 text-[#000000] placeholder-[#000000] resize-none outline-none font-open-regular text-[16px] md:text-[18px]"
+                              className="w-full h-16 px-0 py-2 text-[#000000] placeholder-[#000000] resize-none outline-none font-open-regular text-[16px] md:text-[18px] pl-2"
+                              />
+                             <div className="absolute top-3 w-[1px] h-[25px] bg-[#133844]"></div>
                           </div>
 
                           <div className="flex justify-between items-center mt-2 px-1">
-                            <div className="text-sm text-[#133844]">
+                            <div className="text-sm font-open-light text-[#133844]">
                               {customPrompt.length} / {CHARACTER_LIMIT}
                             </div>
 
@@ -780,13 +782,13 @@ export default function UnifiedSurvey() {
                           }}
                         >
                           <div className="">
-                            <span className="text-[14px] font-bold text-[#000000] font-open-sans">
+                            <span className="text-[12px] md:text-[14px] text-[#000000] font-open-bold">
                               PROMPT {index + 1}
                             </span>
                           </div>
 
                           <div className="mb-2">
-                            <h2 className="text-[14px] font-normal text-[#000000] text-start  mt-2">
+                            <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] text-start  mt-2">
                               {question.question}
                             </h2>
                           </div>
@@ -804,14 +806,14 @@ export default function UnifiedSurvey() {
                                     )
                                   }
                                   placeholder="Type your answer here..."
-                                  className="w-full h-16 px-0 py-2 text-[#000000] placeholder-[#000000] resize-none outline-none text-[18px] font-normal pl-2 font-open-sans"
+                                  className="w-full h-16 px-0 py-2 text-[#000000] placeholder-[#000000] resize-none outline-none font-open-regular text-[16px] md:text-[18px] pl-2"
                                 />
                                 <div className="absolute -left-1 top-2 w-[1px] h-[25px] bg-[#133844]"></div>
                               </div>
                             </div>
 
                             <div className="flex justify-between items-center mt-2 px-1">
-                              <div className="text-sm text-[#133844]">
+                              <div className="text-sm font-open-light text-[#133844]">
                                 {answers[question.id]?.length || 0} /{" "}
                                 {CHARACTER_LIMIT}
                               </div>
@@ -876,7 +878,7 @@ export default function UnifiedSurvey() {
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[14px] font-bold font-open-sans text-[#133844]">
+                    <h3 className="text-[12px] md:text-[16px] font-bold font-open-bold text-[#133844]">
                       View by prompt
                     </h3>
                   </div>
@@ -885,7 +887,7 @@ export default function UnifiedSurvey() {
                       <button
                         key={question.id}
                         onClick={() => handleQuestionFilter(question.id)}
-                        className={`px-3 py-2 rounded-full text-[12px] cursor-pointer font-normal font-open-sans transition-all duration-300 ${
+                        className={`px-3 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
                           selectedQuestion === question.id
                             ? "bg-[#133844] text-[#FFFFFF] shadow-lg"
                             : "bg-[#00BDB6] text-[#FFFFFF]"
@@ -910,11 +912,11 @@ export default function UnifiedSurvey() {
                           key={answer.id}
                           className="px-0 py-4 border-b-[0.5] border-[#133844] last:border-b-0"
                         >
-                          <p className="text-[#133844] font-normal text-[14px] mb-2  ">
+                          <p className="text-[#133844] font-open-regular text-[11px] md:text-[16px] leading-[15px] md:leading-[21px] mb-2  ">
                             {answer.answer}
                           </p>
 
-                          <div className="text-[14px] text-[#133844] font-bold flex justify-between font-open-sans">
+                          <div className="font-open-bold text-[11px] md:text-[14px] text-[#133844] font-bold flex justify-between">
                             <span>
                               {answer.userName
                                 ? answer.userName
@@ -934,10 +936,10 @@ export default function UnifiedSurvey() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-6 text-white/60 h-full flex items-center justify-center">
+                      <div className="text-center font-open-regular text-[11px] md:text-[16px] py-6 text-white/60 h-full flex items-center justify-center">
                         <div>
                           <p>No responses yet.</p>
-                          <p className="text-[14px] mt-2">
+                          <p className="font-open-regular text-[11px] md:text-[16px] mt-2">
                             Be the first to share your thoughts!
                           </p>
                         </div>
