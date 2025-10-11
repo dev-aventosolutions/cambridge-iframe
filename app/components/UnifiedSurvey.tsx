@@ -539,7 +539,7 @@ export default function UnifiedSurvey() {
                       {/* Previous Button */}
                       <button
                         onClick={() => handleScrollClick("left")}
-                        className={`absolute -left-14 md:-left-16 top-1/2 -translate-y-1/2 z-[100] rounded-full p-2 md:p-3 transition-all md:block hidden ${
+                        className={`absolute -left-14 md:-left-14 top-1/2 -translate-y-1/2 z-[100] rounded-full p-2 md:p-3 transition-all md:block hidden ${
                           isPrevDisabled
                             ? "bg-[#133844]/50 text-white cursor-not-allowed"
                             : "bg-[#133844]/75 text-white hover:bg-[#133844] shadow-lg cursor-pointer"
@@ -552,7 +552,7 @@ export default function UnifiedSurvey() {
                       {/* Next Button - Positioned 2px from where second card starts */}
                       <button
                         onClick={() => handleScrollClick("right")}
-                        className={`absolute -right-14 md:-right-16 top-1/2 -translate-y-1/2 z-20 rounded-full p-2 md:p-3 transition-all md:block hidden ${
+                        className={`absolute left-14 md:left-260 top-1/2 -translate-y-1/2 z-20 rounded-full p-2 md:p-3 transition-all md:block hidden ${
                           isNextDisabled
                             ? "bg-[#133844]/50 text-white cursor-not-allowed"
                             : "bg-[#133844]/75 text-white hover:bg-[#133844] shadow-lg cursor-pointer"
@@ -768,7 +768,7 @@ export default function UnifiedSurvey() {
                       questions.map((question, index) => (
                         <div
                           key={question.id}
-                          className={`flex-shrink-0 w-[85%] md:w-[85%] 
+                          className={`flex-shrink-0 w-[85%] md:w-[88%] 
                             bg-white/20 backdrop-blur-[30px] border border-white/40 rounded-2xl p-4 
                             shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]
                             transition-all duration-300 min-h-[233px] mr-4
@@ -874,7 +874,7 @@ export default function UnifiedSurvey() {
               </div>
 
               {/* Rest of the component remains the same */}
-              <div className="lg:flex lg:gap-6">
+              <div className="flex-shrink-0 w-[88%] lg:flex lg:gap-6">
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">
@@ -900,7 +900,7 @@ export default function UnifiedSurvey() {
                 </div>
 
                 {/* RIGHT COLUMN - COMMUNITY RESPONSES (70%) */}
-                <div className="lg:w-[70%] mb-12 md:mb-0 relative">
+                <div className="lg:w-[70%] mt-5 ml-0 md:ml-10 mb-12 md:mb-0 relative">
                   <div
                     ref={containerRef}
                     className="space-y-0 h-84 overflow-y-auto custom-scrollbar hide-native-scrollbar  pr-8 md:pr-14"
