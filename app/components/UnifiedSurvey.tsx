@@ -874,7 +874,7 @@ export default function UnifiedSurvey() {
               </div>
 
               {/* Rest of the component remains the same */}
-              <div className="flex-shrink-0 w-[88%] lg:flex lg:gap-6">
+              <div className="flex-shrink-0 w-[100%] md:w-[88%] lg:flex lg:gap-6">
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">
