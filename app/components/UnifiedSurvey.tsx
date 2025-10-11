@@ -125,6 +125,13 @@ export default function UnifiedSurvey() {
   }, []);
 
   useEffect(() => {
+    // Set Prompt 1 as default selected when questions are loaded
+    if (questions.length > 0 && !selectedQuestion) {
+      setSelectedQuestion(questions[0].id);
+    }
+  }, [questions, selectedQuestion]);
+
+  useEffect(() => {
     if (selectedQuestion) {
       const filtered = approvedAnswers.filter(
         (answer) => answer.questionId === selectedQuestion
@@ -172,7 +179,15 @@ export default function UnifiedSurvey() {
       );
 
       setApprovedAnswers(sorted);
-      setFilteredAnswers(sorted);
+      
+      // Set filtered answers to show only Prompt 1 data by default
+      if (questionsData.length > 0) {
+        const prompt1Id = questionsData[0].id;
+        const prompt1Answers = sorted.filter(answer => answer.questionId === prompt1Id);
+        setFilteredAnswers(prompt1Answers);
+      } else {
+        setFilteredAnswers(sorted);
+      }
     } catch (error) {
       console.error("Error loading answers:", error);
     } finally {
