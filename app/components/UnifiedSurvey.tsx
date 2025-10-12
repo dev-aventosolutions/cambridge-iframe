@@ -844,7 +844,7 @@ export default function UnifiedSurvey() {
                           className={`flex-shrink-0 w-[85%] md:w-[88%] 
                             bg-white/20 backdrop-blur-[30px] rounded-2xl p-4 
                             shadow-[0_4px_16px_0_rgba(19,56,68,0.1)]
-                            transition-all duration-300 min-h-[233px] mr-4
+                            transition-all duration-300 min-h-[233px] mr-1 md:mr-4 ml-2 md:ml-4
                             ${
                               index === currentIndex
                                 ? "opacity-100 scale-100"
@@ -855,7 +855,7 @@ export default function UnifiedSurvey() {
                           }}
                         >
                           <div className="">
-                            <span className="text-[12px] md:text-[14px] text-[#000000] font-open-bold">
+                            <span className="text-[11px] md:text-[15px] text-[#000000] font-open-bold">
                               PROMPT {index + 1}
                             </span>
                           </div>
@@ -947,7 +947,7 @@ export default function UnifiedSurvey() {
               </div>
 
               {/* Rest of the component remains the same */}
-              <div className="flex-shrink-0 w-[100%] md:w-[88%] lg:flex lg:gap-6">
+              <div className="ml-0 md:ml-4 flex-shrink-0 w-[100%] md:w-[88%] lg:flex lg:gap-6" >
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">
@@ -961,7 +961,7 @@ export default function UnifiedSurvey() {
                       <button
                         key={question.id}
                         onClick={() => handleQuestionFilter(question.id)}
-                        className={`prompt-badge px-1 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
+                        className={`prompt-badge px-2 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
                           selectedQuestion === question.id
                             ? "bg-[#133844] text-[#FFFFFF] shadow-lg"
                             : "bg-[#00BDB6] text-[#FFFFFF]"
