@@ -1,13 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import {
-  Check,
-  RefreshCcw,
-  ChevronLeft,
-  ChevronRight,
-  CheckIcon,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { Question, UserInfo, airtableService } from "../services/airtable";
 
 export default function UnifiedSurvey() {
@@ -36,7 +29,6 @@ export default function UnifiedSurvey() {
   const [hasSubmittedBefore, setHasSubmittedBefore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // NEW: Store the record IDs of submitted answers
   const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
 
   const CHARACTER_LIMIT = 1000;
@@ -46,13 +38,10 @@ export default function UnifiedSurvey() {
   const thumbRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // FIXED: Use a ref to track the current index for navigation
   const currentIndexRef = useRef(0);
 
-  // Track if user is manually scrolling to prevent conflicts
   const isManualScrollRef = useRef(false);
 
-  // Update the ref whenever currentIndex changes
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
@@ -61,39 +50,50 @@ export default function UnifiedSurvey() {
     if (!scrollRef.current) return;
 
     const container = scrollRef.current;
-    const cardWidth = container.clientWidth * 0.85; // 85% of container width (15% peek)
-    const scrollAmount = direction === "left" ? -cardWidth : cardWidth;
+    const cardWidth = container.clientWidth * 0.85;
+    const gap = 16;
+    const totalCardWidth = cardWidth + gap;
 
-    const newScrollLeft = container.scrollLeft + scrollAmount;
+    let newScrollLeft;
+
+    if (direction === "left") {
+      newScrollLeft = container.scrollLeft - totalCardWidth;
+    } else {
+      newScrollLeft = container.scrollLeft + totalCardWidth;
+    }
+
     const maxScrollLeft = container.scrollWidth - container.clientWidth;
 
-    // Ensure we don't scroll beyond boundaries
-    const boundedScrollLeft = Math.max(
-      0,
-      Math.min(newScrollLeft, maxScrollLeft)
-    );
+    let boundedScrollLeft;
+    if (direction === "left" && newScrollLeft < 0) {
+      boundedScrollLeft = 0;
+    } else if (direction === "right" && newScrollLeft > maxScrollLeft) {
+      boundedScrollLeft = maxScrollLeft;
+    } else {
+      boundedScrollLeft = newScrollLeft;
+    }
 
-    // Set manual scroll flag
     isManualScrollRef.current = true;
-    
+
     container.scrollTo({
       left: boundedScrollLeft,
       behavior: "smooth",
     });
 
-    // Calculate new index based on scroll position
-    const newIndex = Math.round(boundedScrollLeft / cardWidth);
-    if (newIndex !== currentIndex && newIndex >= 0 && newIndex < questions.length) {
+    const newIndex = Math.round(boundedScrollLeft / totalCardWidth);
+    if (
+      newIndex !== currentIndex &&
+      newIndex >= 0 &&
+      newIndex < questions.length
+    ) {
       setCurrentIndex(newIndex);
     }
 
-    // Reset manual scroll flag after animation
     setTimeout(() => {
       isManualScrollRef.current = false;
     }, 500);
   };
 
-  // Add validation function
   const validateUserInfo = (): boolean => {
     if (!userInfo.name.trim()) {
       alert("Please enter your full name.");
@@ -105,7 +105,6 @@ export default function UnifiedSurvey() {
       return false;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userInfo.email)) {
       alert("Please enter a valid email address.");
@@ -165,7 +164,6 @@ export default function UnifiedSurvey() {
   }, []);
 
   useEffect(() => {
-    // Set Prompt 1 as default selected when questions are loaded
     if (questions.length > 0 && !selectedQuestion) {
       setSelectedQuestion(questions[0].id);
     }
@@ -220,7 +218,6 @@ export default function UnifiedSurvey() {
 
       setApprovedAnswers(sorted);
 
-      // Set filtered answers to show only Prompt 1 data by default
       if (questionsData.length > 0) {
         const prompt1Id = questionsData[0].id;
         const prompt1Answers = sorted.filter(
@@ -246,7 +243,6 @@ export default function UnifiedSurvey() {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    // Validate user info before submitting
     if (!validateUserInfo()) {
       return;
     }
@@ -275,7 +271,6 @@ export default function UnifiedSurvey() {
     setIsSubmitting(false);
 
     if (result.success) {
-      // Store the record IDs for later use with custom prompt
       if (result.recordIds) {
         setSubmittedRecordIds(result.recordIds);
       }
@@ -286,7 +281,6 @@ export default function UnifiedSurvey() {
       setAnswers({});
       loadApprovedAnswers();
 
-      // FIXED: Use the ref to get current index and navigate
       const currentIdx = currentIndexRef.current;
       const nextIndex = (currentIdx + 1) % questions.length;
       console.log(
@@ -309,16 +303,13 @@ export default function UnifiedSurvey() {
       return;
     }
 
-    // For direct submit, we need to check if we have user info already
     if (!hasSubmittedBefore || !userInfo.gdprConsent) {
-      // If user hasn't submitted before or doesn't have GDPR consent, show form
       setShowUserForm(true);
       return;
     }
 
-    // Validate user info for direct submit
     if (!validateUserInfo()) {
-      setShowUserForm(true); // Show form so they can fix the info
+      setShowUserForm(true);
       return;
     }
 
@@ -340,7 +331,6 @@ export default function UnifiedSurvey() {
     setIsSubmitting(false);
 
     if (result.success) {
-      // Store the record ID for later use with custom prompt
       if (result.recordId) {
         setSubmittedRecordIds([result.recordId]);
       }
@@ -357,7 +347,6 @@ export default function UnifiedSurvey() {
 
       loadApprovedAnswers();
 
-      // FIXED: Use the ref to get current index and navigate
       const currentIdx = currentIndexRef.current;
       const nextIndex = (currentIdx + 1) % questions.length;
       console.log(
@@ -382,9 +371,7 @@ export default function UnifiedSurvey() {
     try {
       let success = false;
 
-      // Update ALL previously submitted records with the custom prompt
       if (submittedRecordIds.length > 0) {
-        // Update all records with the same custom prompt
         const updatePromises = submittedRecordIds.map((recordId) =>
           airtableService.updateAnswerWithCustomPrompt(recordId, customPrompt)
         );
@@ -396,7 +383,6 @@ export default function UnifiedSurvey() {
           `Updated ${submittedRecordIds.length} records with custom prompt`
         );
       } else {
-        // Fallback: create a new record if no previous records found
         console.warn(
           "No previous records found, creating new record for custom prompt"
         );
@@ -409,9 +395,8 @@ export default function UnifiedSurvey() {
       if (success) {
         setShowThankYou(false);
         setCustomPrompt("");
-        setSubmittedRecordIds([]); // Reset record IDs
+        setSubmittedRecordIds([]);
 
-        // FIXED: Use the ref to get current index and navigate
         const currentIdx = currentIndexRef.current;
         const nextIndex = (currentIdx + 1) % questions.length;
         console.log(
@@ -437,7 +422,6 @@ export default function UnifiedSurvey() {
     setShowThankYou(false);
     setCustomPrompt("");
 
-    // FIXED: Use the ref to get current index and navigate
     const currentIdx = currentIndexRef.current;
     const nextIndex = (currentIdx + 1) % questions.length;
     console.log(
@@ -495,14 +479,30 @@ export default function UnifiedSurvey() {
 
   // Handle scroll to update current index - COMPLETELY REWRITTEN
   const handleScroll = () => {
-    if (!scrollRef.current || showUserForm || showThankYou || isManualScrollRef.current) return;
+    if (
+      !scrollRef.current ||
+      showUserForm ||
+      showThankYou ||
+      isManualScrollRef.current
+    )
+      return;
 
     const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = scrollRef.current.clientWidth * 0.85; // 85% of container width (15% peek)
-    const newIndex = Math.round(scrollLeft / cardWidth);
+    const cardWidth = scrollRef.current.clientWidth * 0.85;
+    const gap = 16;
+    const totalCardWidth = cardWidth + gap;
 
-    if (newIndex !== currentIndex && newIndex >= 0 && newIndex < questions.length) {
-      console.log(`Scroll: Updating current index from ${currentIndex} to ${newIndex}`);
+    // Use Math.round for more accurate index calculation
+    const newIndex = Math.round(scrollLeft / totalCardWidth);
+
+    if (
+      newIndex !== currentIndex &&
+      newIndex >= 0 &&
+      newIndex < questions.length
+    ) {
+      console.log(
+        `Scroll: Updating current index from ${currentIndex} to ${newIndex}`
+      );
       setCurrentIndex(newIndex);
     }
   };
@@ -515,15 +515,26 @@ export default function UnifiedSurvey() {
     }
   }, [questions.length, currentIndex, showUserForm, showThankYou]);
 
-  // Scroll to current index when it changes - IMPROVED VERSION
   useEffect(() => {
-    if (scrollRef.current && !showUserForm && !showThankYou && !isManualScrollRef.current) {
+    if (
+      scrollRef.current &&
+      !showUserForm &&
+      !showThankYou &&
+      !isManualScrollRef.current
+    ) {
       const cardWidth = scrollRef.current.clientWidth * 0.85;
-      const targetScroll = currentIndex * cardWidth;
-      
-      // Only scroll if we're significantly away from the target position
-      if (Math.abs(scrollRef.current.scrollLeft - targetScroll) > 10) {
-        console.log(`Scrolling to index ${currentIndex}, position ${targetScroll}`);
+      const gap = 16;
+      const totalCardWidth = cardWidth + gap;
+      const targetScroll = currentIndex * totalCardWidth;
+
+      const currentScroll = scrollRef.current.scrollLeft;
+      const scrollDifference = Math.abs(currentScroll - targetScroll);
+
+      if (scrollDifference > totalCardWidth * 0.1) {
+        // 10% of card width
+        console.log(
+          `Scrolling to index ${currentIndex}, position ${targetScroll}`
+        );
         scrollRef.current.scrollTo({
           left: targetScroll,
           behavior: "smooth",
@@ -532,15 +543,16 @@ export default function UnifiedSurvey() {
     }
   }, [currentIndex, showUserForm, showThankYou]);
 
-  // Handle dot click - IMPROVED VERSION
   const handleDotClick = (index: number) => {
     console.log(`Dot clicked: Navigating to index ${index}`);
     setCurrentIndex(index);
-    
+
     if (scrollRef.current) {
       const cardWidth = scrollRef.current.clientWidth * 0.85;
-      const targetScroll = index * cardWidth;
-      
+      const gap = 16;
+      const totalCardWidth = cardWidth + gap;
+      const targetScroll = index * totalCardWidth;
+
       isManualScrollRef.current = true;
       scrollRef.current.scrollTo({
         left: targetScroll,
@@ -553,7 +565,6 @@ export default function UnifiedSurvey() {
     }
   };
 
-  // Check if buttons should be disabled
   const isPrevDisabled = currentIndex === 0;
   const isNextDisabled = currentIndex === questions.length - 1;
 
@@ -600,27 +611,35 @@ export default function UnifiedSurvey() {
                       {/* Previous Button */}
                       <button
                         onClick={() => handleScrollClick("left")}
-                        className={`absolute -left-14 md:-left-14 top-1/2 -translate-y-1/2 z-[100] rounded-full p-2 md:p-3 transition-all md:block hidden ${
+                        className={`absolute top-1/2 -translate-y-1/2 left-3 z-[100] md:flex items-center justify-center rounded-full w-10 h-10 transition-all hidden lg:flex prev-btn ${
                           isPrevDisabled
                             ? "bg-[#133844]/50 text-white cursor-not-allowed"
                             : "bg-[#133844]/75 text-white hover:bg-[#133844] shadow-lg cursor-pointer"
                         }`}
                         disabled={isPrevDisabled}
                       >
-                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                        <img
+                          src="/previous.svg"
+                          alt="Previous"
+                          className="w-[10px] h-[22px] object-contain"
+                        />
                       </button>
 
-                      {/* Next Button - Positioned 2px from where second card starts */}
+                      {/* Next Button */}
                       <button
                         onClick={() => handleScrollClick("right")}
-                        className={`absolute left-14 md:left-260 top-1/2 -translate-y-1/2 z-20 rounded-full p-2 md:p-3 transition-all md:block hidden ${
+                        className={`absolute top-1/2 -translate-y-1/2 right-3 z-20 md:flex items-center justify-center rounded-full w-10 h-10 transition-all hidden lg:flex next-btn ${
                           isNextDisabled
                             ? "bg-[#133844]/50 text-white cursor-not-allowed"
                             : "bg-[#133844]/75 text-white hover:bg-[#133844] shadow-lg cursor-pointer"
                         }`}
                         disabled={isNextDisabled}
                       >
-                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                        <img
+                          src="/nexticon.svg"
+                          alt="Next"
+                          className="w-[10px] h-[22px] object-contain"
+                        />
                       </button>
                     </>
                   )}
@@ -909,7 +928,7 @@ export default function UnifiedSurvey() {
 
                 {/* Mobile Navigation Dots - Hidden on desktop, shown on mobile */}
                 {!showUserForm && !showThankYou && questions.length > 1 && (
-                  <div className="flex justify-center mt-4 md:hidden">
+                  <div className="flex justify-center mt-4 lg:hidden">
                     <div className="flex space-x-2">
                       {questions.map((_, index) => (
                         <button
@@ -936,12 +955,13 @@ export default function UnifiedSurvey() {
                       View by prompt
                     </h3>
                   </div>
+                  {/* view bedges */}
                   <div className="grid grid-cols-3 gap-4">
                     {questions.map((question, index) => (
                       <button
                         key={question.id}
                         onClick={() => handleQuestionFilter(question.id)}
-                        className={`px-1 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
+                        className={`prompt-badge px-1 py-2 rounded-full text-[11px] md:text-[15px] cursor-pointer font-open-regular transition-all duration-300 ${
                           selectedQuestion === question.id
                             ? "bg-[#133844] text-[#FFFFFF] shadow-lg"
                             : "bg-[#00BDB6] text-[#FFFFFF]"
