@@ -29,6 +29,13 @@ export default function UnifiedSurvey() {
   const [hasSubmittedBefore, setHasSubmittedBefore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Form validation states
+  const [formErrors, setFormErrors] = useState({
+    name: "",
+    email: "",
+    gdprConsent: ""
+  });
+
   const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
 
   const CHARACTER_LIMIT = 1000;
@@ -94,31 +101,50 @@ export default function UnifiedSurvey() {
     }, 500);
   };
 
+  // Updated validation function with error state management
   const validateUserInfo = (): boolean => {
+    const errors = {
+      name: "",
+      email: "",
+      gdprConsent: ""
+    };
+
+    let isValid = true;
+
+    // Name validation
     if (!userInfo.name.trim()) {
-      alert("Please enter your full name.");
-      return false;
+      errors.name = "This field is required";
+      isValid = false;
     }
 
+    // Email validation
     if (!userInfo.email.trim()) {
-      alert("Please enter your email address.");
-      return false;
+      errors.email = "This field is required";
+      isValid = false;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userInfo.email)) {
+        errors.email = "Please enter a valid email address";
+        isValid = false;
+      }
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userInfo.email)) {
-      alert("Please enter a valid email address.");
-      return false;
-    }
-
+    // GDPR consent validation
     if (!userInfo.gdprConsent) {
-      alert(
-        "Please agree to the privacy policy by checking the GDPR consent box."
-      );
-      return false;
+      errors.gdprConsent = "Please agree to our Privacy Policy to proceed.";
+      isValid = false;
     }
 
-    return true;
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  // Clear individual field error when user starts typing
+  const clearFieldError = (fieldName: keyof typeof formErrors) => {
+    setFormErrors(prev => ({
+      ...prev,
+      [fieldName]: ""
+    }));
   };
 
   useEffect(() => {
@@ -243,6 +269,7 @@ export default function UnifiedSurvey() {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
+    // Validate user info before submitting
     if (!validateUserInfo()) {
       return;
     }
@@ -259,6 +286,7 @@ export default function UnifiedSurvey() {
       }));
 
     if (answersArray.length === 0) {
+      // Show error for no answers
       alert("Please answer at least one question before submitting.");
       setSubmitting(false);
       setIsSubmitting(false);
@@ -290,7 +318,8 @@ export default function UnifiedSurvey() {
       );
       setCurrentIndex(nextIndex);
     } else {
-      alert("Failed to submit. Try again.");
+      // Show submission error without alert
+      console.error("Failed to submit. Try again.");
     }
   };
 
@@ -299,7 +328,7 @@ export default function UnifiedSurvey() {
 
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion || !answers[currentQuestion.id]?.trim()) {
-      alert("Please write an answer before submitting.");
+      // Show error for empty answer
       return;
     }
 
@@ -356,13 +385,14 @@ export default function UnifiedSurvey() {
       );
       setCurrentIndex(nextIndex);
     } else {
-      alert("Failed to submit. Try again.");
+      // Show submission error without alert
+      console.error("Failed to submit. Try again.");
     }
   };
 
   const handleCustomPromptSubmit = async () => {
     if (!customPrompt.trim()) {
-      alert("Please enter a prompt before submitting.");
+      // Show error for empty custom prompt
       return;
     }
 
@@ -406,13 +436,14 @@ export default function UnifiedSurvey() {
         );
         setCurrentIndex(nextIndex);
 
-        alert("Your custom prompt has been submitted successfully!");
+        // Removed the alert for successful custom prompt submission
       } else {
-        alert("Failed to submit custom prompt. Try again.");
+        // Show error without alert
+        console.error("Failed to submit custom prompt. Try again.");
       }
     } catch (error) {
       console.error("Error submitting custom prompt:", error);
-      alert("Failed to submit custom prompt. Try again.");
+      // Show error without alert
     } finally {
       setSubmittingCustomPrompt(false);
     }
@@ -434,6 +465,8 @@ export default function UnifiedSurvey() {
 
   const handleCloseForm = () => {
     setShowUserForm(false);
+    // Clear form errors when closing form
+    setFormErrors({ name: "", email: "", gdprConsent: "" });
   };
 
   const nextQuestion = () => {
@@ -671,35 +704,55 @@ export default function UnifiedSurvey() {
                           <hr className="border-t-1 border-[#133844]" />
 
                           <div className="space-y-6">
-                            {/* Form fields */}
+                            {/* Form fields with validation */}
                             <div>
                               <input
                                 type="text"
                                 value={userInfo.name}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   setUserInfo({
                                     ...userInfo,
                                     name: e.target.value,
-                                  })
-                                }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
+                                  });
+                                  clearFieldError("name");
+                                }}
+                                className={`w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 ${
+                                  formErrors.name 
+                                    ? "border-red-500" 
+                                    : "border-[#133844]/30"
+                                }`}
                                 placeholder="Enter Full Name *"
                               />
+                              {formErrors.name && (
+                                <p className="text-red-500 text-[10px] mt-1 font-open-regular">
+                                  {formErrors.name}
+                                </p>
+                              )}
                             </div>
 
                             <div>
                               <input
                                 type="email"
                                 value={userInfo.email}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   setUserInfo({
                                     ...userInfo,
                                     email: e.target.value,
-                                  })
-                                }
-                                className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
+                                  });
+                                  clearFieldError("email");
+                                }}
+                                className={`w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 ${
+                                  formErrors.email 
+                                    ? "border-red-500" 
+                                    : "border-[#133844]/30"
+                                }`}
                                 placeholder="Enter Email *"
                               />
+                              {formErrors.email && (
+                                <p className="text-red-500 text-[10px] mt-1 font-open-regular">
+                                  {formErrors.email}
+                                </p>
+                              )}
                             </div>
 
                             <div>
@@ -737,22 +790,30 @@ export default function UnifiedSurvey() {
                                 type="checkbox"
                                 id="gdpr"
                                 checked={userInfo.gdprConsent}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   setUserInfo({
                                     ...userInfo,
                                     gdprConsent: e.target.checked,
-                                  })
-                                }
-                                className="custom-checkbox mt-0.5"
+                                  });
+                                  clearFieldError("gdprConsent");
+                                }}
+                                className={`custom-checkbox mt-0.5 ${
+                                  formErrors.gdprConsent ? "border-red-500" : ""
+                                }`}
                               />
                               <label
                                 htmlFor="gdpr"
-                                className="font-open-regular text-[10px] md:text-[14px]  text-[#133844]/80 leading-relaxed text-left mt-1"
+                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-1"
                               >
                                 By clicking submit, you agree to our privacy
                                 policy. *
                               </label>
                             </div>
+                            {formErrors.gdprConsent && (
+                              <p className="text-red-500 text-[10px] font-open-regular -mt-5">
+                                {formErrors.gdprConsent}
+                              </p>
+                            )}
                           </div>
 
                           <div className="flex justify-end pt-6">
