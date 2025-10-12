@@ -159,7 +159,7 @@ body {
 .custom-thumb {
   position: absolute;
   top: 0;
-  right: -4px;              
+  right: -5px;              
   width: 25px;             
   border-radius: 12px;
   background: #00BDB6;
@@ -173,7 +173,7 @@ body {
 @media (max-width: 640px) {
   .custom-thumb {
     width: 12px; /* smaller width on mobile */
-    right: 0.8px;
+    right: 1.5px;
   }
 }
 
