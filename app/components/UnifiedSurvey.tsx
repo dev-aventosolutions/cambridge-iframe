@@ -617,7 +617,7 @@ export default function UnifiedSurvey() {
             to get us started.
           </p>
           <p className="text-start text-[13px] md:text-[18px] font-open-light  text-[#133844]">
-            Answer any that inspire you, or share you own.
+            Answer any that inspire you, or share your own.
           </p>
         </div>
 
