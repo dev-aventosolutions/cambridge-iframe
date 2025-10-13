@@ -101,6 +101,33 @@ export default function UnifiedSurvey() {
     }, 500);
   };
 
+  // NEW: Function to navigate to specific prompt
+  const navigateToPrompt = (questionId: string) => {
+    const questionIndex = questions.findIndex(q => q.id === questionId);
+    if (questionIndex !== -1) {
+      console.log(`Navigating to prompt ${questionIndex + 1}`);
+      setCurrentIndex(questionIndex);
+      
+      // Scroll to the specific prompt
+      if (scrollRef.current) {
+        const cardWidth = scrollRef.current.clientWidth * 0.85;
+        const gap = 16;
+        const totalCardWidth = cardWidth + gap;
+        const targetScroll = questionIndex * totalCardWidth;
+        
+        isManualScrollRef.current = true;
+        scrollRef.current.scrollTo({
+          left: targetScroll,
+          behavior: "smooth",
+        });
+
+        setTimeout(() => {
+          isManualScrollRef.current = false;
+        }, 500);
+      }
+    }
+  };
+
   // Updated validation function with error state management
   const validateUserInfo = (): boolean => {
     const errors = {
@@ -506,8 +533,14 @@ export default function UnifiedSurvey() {
     );
   };
 
+  // UPDATED: Handle question filter with navigation
   const handleQuestionFilter = (questionId: string | null) => {
     setSelectedQuestion(questionId);
+    
+    // If a specific prompt is selected, navigate to that prompt in the slider
+    if (questionId) {
+      navigateToPrompt(questionId);
+    }
   };
 
   // Handle scroll to update current index - COMPLETELY REWRITTEN
@@ -537,6 +570,11 @@ export default function UnifiedSurvey() {
         `Scroll: Updating current index from ${currentIndex} to ${newIndex}`
       );
       setCurrentIndex(newIndex);
+      
+      // Update selected question filter based on current index
+      if (questions[newIndex]) {
+        setSelectedQuestion(questions[newIndex].id);
+      }
     }
   };
 
@@ -579,6 +617,11 @@ export default function UnifiedSurvey() {
   const handleDotClick = (index: number) => {
     console.log(`Dot clicked: Navigating to index ${index}`);
     setCurrentIndex(index);
+    
+    // Update selected question filter based on dot click
+    if (questions[index]) {
+      setSelectedQuestion(questions[index].id);
+    }
 
     if (scrollRef.current) {
       const cardWidth = scrollRef.current.clientWidth * 0.85;
