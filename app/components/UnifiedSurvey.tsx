@@ -965,7 +965,7 @@ export default function UnifiedSurvey() {
                           </div>
 
                           <div className="mb-2">
-                            <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] text-start  mt-2">
+                            <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] h-[70px] md:h-[50px] text-start  mt-2">
                               {question.question}
                             </h2>
                           </div>
