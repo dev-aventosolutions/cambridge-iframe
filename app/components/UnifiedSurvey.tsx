@@ -33,7 +33,7 @@ export default function UnifiedSurvey() {
   const [formErrors, setFormErrors] = useState({
     name: "",
     email: "",
-    gdprConsent: ""
+    gdprConsent: "",
   });
 
   const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
@@ -103,18 +103,18 @@ export default function UnifiedSurvey() {
 
   // NEW: Function to navigate to specific prompt
   const navigateToPrompt = (questionId: string) => {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
+    const questionIndex = questions.findIndex((q) => q.id === questionId);
     if (questionIndex !== -1) {
       console.log(`Navigating to prompt ${questionIndex + 1}`);
       setCurrentIndex(questionIndex);
-      
+
       // Scroll to the specific prompt
       if (scrollRef.current) {
         const cardWidth = scrollRef.current.clientWidth * 0.85;
         const gap = 16;
         const totalCardWidth = cardWidth + gap;
         const targetScroll = questionIndex * totalCardWidth;
-        
+
         isManualScrollRef.current = true;
         scrollRef.current.scrollTo({
           left: targetScroll,
@@ -133,7 +133,7 @@ export default function UnifiedSurvey() {
     const errors = {
       name: "",
       email: "",
-      gdprConsent: ""
+      gdprConsent: "",
     };
 
     let isValid = true;
@@ -168,9 +168,9 @@ export default function UnifiedSurvey() {
 
   // Clear individual field error when user starts typing
   const clearFieldError = (fieldName: keyof typeof formErrors) => {
-    setFormErrors(prev => ({
+    setFormErrors((prev) => ({
       ...prev,
-      [fieldName]: ""
+      [fieldName]: "",
     }));
   };
 
@@ -536,7 +536,7 @@ export default function UnifiedSurvey() {
   // UPDATED: Handle question filter with navigation
   const handleQuestionFilter = (questionId: string | null) => {
     setSelectedQuestion(questionId);
-    
+
     // If a specific prompt is selected, navigate to that prompt in the slider
     if (questionId) {
       navigateToPrompt(questionId);
@@ -570,7 +570,7 @@ export default function UnifiedSurvey() {
         `Scroll: Updating current index from ${currentIndex} to ${newIndex}`
       );
       setCurrentIndex(newIndex);
-      
+
       // Update selected question filter based on current index
       if (questions[newIndex]) {
         setSelectedQuestion(questions[newIndex].id);
@@ -617,7 +617,7 @@ export default function UnifiedSurvey() {
   const handleDotClick = (index: number) => {
     console.log(`Dot clicked: Navigating to index ${index}`);
     setCurrentIndex(index);
-    
+
     // Update selected question filter based on dot click
     if (questions[index]) {
       setSelectedQuestion(questions[index].id);
@@ -760,11 +760,11 @@ export default function UnifiedSurvey() {
                                   clearFieldError("name");
                                 }}
                                 className={`w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 ${
-                                  formErrors.name 
-                                    ? "border-red-500" 
+                                  formErrors.name
+                                    ? "border-red-500"
                                     : "border-[#133844]/30"
                                 }`}
-                                placeholder="Enter Full Name *"
+                                placeholder="Full Name *"
                               />
                               {formErrors.name && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
@@ -785,11 +785,11 @@ export default function UnifiedSurvey() {
                                   clearFieldError("email");
                                 }}
                                 className={`w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 ${
-                                  formErrors.email 
-                                    ? "border-red-500" 
+                                  formErrors.email
+                                    ? "border-red-500"
                                     : "border-[#133844]/30"
                                 }`}
-                                placeholder="Enter Email *"
+                                placeholder="Email *"
                               />
                               {formErrors.email && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
@@ -809,7 +809,7 @@ export default function UnifiedSurvey() {
                                   })
                                 }
                                 className="w-full p-2 bg-transparent text-[#000000] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
-                                placeholder="Enter Country"
+                                placeholder="Country"
                               />
                             </div>
 
@@ -824,7 +824,7 @@ export default function UnifiedSurvey() {
                                   })
                                 }
                                 className="w-full p-2 bg-transparent text-[#133844] placeholder-[#133844]/80 outline-none font-open-regular text-[11px] md:text-[15px] border-b-2 border-[#133844]/30"
-                                placeholder="Organization"
+                                placeholder="Organisation"
                               />
                             </div>
 
@@ -1051,7 +1051,7 @@ export default function UnifiedSurvey() {
               </div>
 
               {/* Rest of the component remains the same */}
-              <div className="ml-0 md:ml-4 flex-shrink-0 w-[100%] md:w-[88%] lg:flex lg:gap-6" >
+              <div className="ml-0 md:ml-4 flex-shrink-0 w-[100%] md:w-[88%] lg:flex lg:gap-6">
                 {/* LEFT COLUMN - FILTERS (30%) */}
                 <div className="lg:w-[30%] mb-6">
                   <div className="flex items-center justify-between mb-3">

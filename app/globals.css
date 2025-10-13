@@ -222,4 +222,13 @@ body {
 } */
 
 
+/* Hide scrollbar for the entire page but keep scrolling functional */
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
+}
 
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+  display: none; 
+}
