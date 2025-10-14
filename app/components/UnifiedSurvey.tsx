@@ -851,8 +851,8 @@ export default function UnifiedSurvey() {
     htmlFor="gdpr"
     className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
   >
-    By clicking Submit, you confirm that you are over 18 years old, agree to our Privacy 
-    Policy, and understand that your name, country, and organisation may be displayed publicly.*
+    By clicking Submit, you confirm that you are over 18 years old, agree to our <a href="https://www.cambridge.org/legal/privacy" className="text-[#0056b3] hover:text-[#003d80] underline">Privacy 
+    Policy</a>, and understand that your name, country, and organisation may be displayed publicly.*
   </label>
 </div>
                             {formErrors.gdprConsent && (
