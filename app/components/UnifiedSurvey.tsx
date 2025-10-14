@@ -29,6 +29,12 @@ export default function UnifiedSurvey() {
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [hasSubmittedBefore, setHasSubmittedBefore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Add this ref at the top with your other refs
+  const isNavigatingRef = useRef(false);
+  // Add a new state to prevent scroll updates during submission
+  const [preventScrollUpdate, setPreventScrollUpdate] = useState(false);
+  const [isNavigatingAfterThankYou, setIsNavigatingAfterThankYou] =
+    useState(false);
 
   // Form validation states
   const [formErrors, setFormErrors] = useState({
@@ -51,9 +57,6 @@ export default function UnifiedSurvey() {
 
   const isManualScrollRef = useRef(false);
 
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
 
   const handleScrollClick = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -130,6 +133,13 @@ export default function UnifiedSurvey() {
     }
   };
 
+  // Add useEffect to set initial selectedQuestion when questions load
+  useEffect(() => {
+    if (questions.length > 0 && !selectedQuestion) {
+      setSelectedQuestion(questions[0].id);
+    }
+  }, [questions]);
+
   // Updated validation function with public consent validation
   const validateUserInfo = (): boolean => {
     const errors = {
@@ -155,7 +165,8 @@ export default function UnifiedSurvey() {
 
     // Public consent validation
     if (!userInfo.publicConsent) {
-      errors.publicConsent = "Please confirm your understanding that your name, country, and organisation may be displayed publicly.";
+      errors.publicConsent =
+        "Please confirm your understanding that your name, country, and organisation may be displayed publicly.";
       isValid = false;
     }
 
@@ -212,12 +223,6 @@ export default function UnifiedSurvey() {
     loadQuestions();
     loadApprovedAnswers();
   }, []);
-
-  useEffect(() => {
-    if (questions.length > 0 && !selectedQuestion) {
-      setSelectedQuestion(questions[0].id);
-    }
-  }, [questions, selectedQuestion]);
 
   useEffect(() => {
     if (selectedQuestion) {
@@ -329,18 +334,12 @@ export default function UnifiedSurvey() {
 
       setHasSubmittedBefore(true);
       setShowUserForm(false);
-      setShowThankYou(true);
+      setShowThankYou(true); // Show thank you form
       setAnswers({});
       loadApprovedAnswers();
 
-      const currentIdx = currentIndexRef.current;
-      const nextIndex = (currentIdx + 1) % questions.length;
-      console.log(
-        `Form submit: Navigating from question ${currentIdx + 1} to question ${
-          nextIndex + 1
-        }`
-      );
-      setCurrentIndex(nextIndex);
+      // REMOVED: Navigation logic from here
+      // Navigation will happen after thank you form is submitted or closed
     } else {
       // Show submission error without alert
       console.error("Failed to submit. Try again.");
@@ -352,11 +351,14 @@ export default function UnifiedSurvey() {
 
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion || !answers[currentQuestion.id]?.trim()) {
-      // Show error for empty answer
       return;
     }
 
-    if (!hasSubmittedBefore || !userInfo.gdprConsent || !userInfo.publicConsent) {
+    if (
+      !hasSubmittedBefore ||
+      !userInfo.gdprConsent ||
+      !userInfo.publicConsent
+    ) {
       setShowUserForm(true);
       return;
     }
@@ -368,6 +370,7 @@ export default function UnifiedSurvey() {
 
     setIsSubmitting(true);
     setSubmitting(true);
+    setPreventScrollUpdate(true);
 
     const answerData = {
       questionId: currentQuestion.id,
@@ -400,26 +403,24 @@ export default function UnifiedSurvey() {
 
       loadApprovedAnswers();
 
-      const currentIdx = currentIndexRef.current;
-      const nextIndex = (currentIdx + 1) % questions.length;
-      console.log(
-        `Direct submit: Navigating from question ${
-          currentIdx + 1
-        } to question ${nextIndex + 1}`
-      );
-      setCurrentIndex(nextIndex);
+      console.log(`Submitted answer for Prompt ${currentIndex + 1}`);
+
+      // IMPORTANT: Don't navigate here - wait for thank you form completion
     } else {
-      // Show submission error without alert
       console.error("Failed to submit. Try again.");
     }
+
+    setTimeout(() => {
+      setPreventScrollUpdate(false);
+    }, 1000);
   };
 
   const handleCustomPromptSubmit = async () => {
-    if (!customPrompt.trim()) {
-      // Show error for empty custom prompt
+    if (!customPrompt.trim() || isNavigatingRef.current) {
       return;
     }
 
+    isNavigatingRef.current = true;
     setSubmittingCustomPrompt(true);
 
     try {
@@ -432,7 +433,6 @@ export default function UnifiedSurvey() {
 
         const results = await Promise.all(updatePromises);
         success = results.every((result) => result === true);
-
         console.log(
           `Updated ${submittedRecordIds.length} records with custom prompt`
         );
@@ -447,45 +447,146 @@ export default function UnifiedSurvey() {
       }
 
       if (success) {
+        const currentIndexValue = currentIndexRef.current;
+        const nextIndex = (currentIndexValue + 1) % questions.length;
+
+        console.log(
+          `🚀 NAVIGATION START: ${currentIndexValue} -> ${nextIndex}`
+        );
+
+        // Reset filter and update state
+        setSelectedQuestion(null);
         setShowThankYou(false);
         setCustomPrompt("");
         setSubmittedRecordIds([]);
 
-        const currentIdx = currentIndexRef.current;
-        const nextIndex = (currentIdx + 1) % questions.length;
-        console.log(
-          `Custom prompt: Navigating from question ${
-            currentIdx + 1
-          } to question ${nextIndex + 1}`
-        );
+        // Update ref immediately
+        currentIndexRef.current = nextIndex;
+
+        // Update state
         setCurrentIndex(nextIndex);
 
-        // Removed the alert for successful custom prompt submission
+        // Scroll directly
+        setTimeout(() => {
+          if (scrollRef.current) {
+            const cardWidth = scrollRef.current.clientWidth * 0.85;
+            const gap = 16;
+            const totalCardWidth = cardWidth + gap;
+            const targetScroll = nextIndex * totalCardWidth;
+
+            console.log(
+              `🎯 Scrolling to index ${nextIndex}, position ${targetScroll}`
+            );
+
+            isManualScrollRef.current = true;
+            scrollRef.current.scrollTo({
+              left: targetScroll,
+              behavior: "smooth",
+            });
+
+            setTimeout(() => {
+              isManualScrollRef.current = false;
+              isNavigatingRef.current = false;
+              console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
+            }, 500);
+          }
+        }, 50);
       } else {
-        // Show error without alert
+        isNavigatingRef.current = false;
         console.error("Failed to submit custom prompt. Try again.");
       }
     } catch (error) {
       console.error("Error submitting custom prompt:", error);
-      // Show error without alert
+      isNavigatingRef.current = false;
     } finally {
       setSubmittingCustomPrompt(false);
     }
   };
 
   const handleCloseThankYou = () => {
+    if (isNavigatingRef.current) return;
+
+    isNavigatingRef.current = true;
+    const currentIndexValue = currentIndexRef.current;
+    const nextIndex = (currentIndexValue + 1) % questions.length;
+
+    console.log(`🚀 NAVIGATION START: ${currentIndexValue} -> ${nextIndex}`);
+
+    // Reset filter and update state
+    setSelectedQuestion(null);
     setShowThankYou(false);
     setCustomPrompt("");
 
-    const currentIdx = currentIndexRef.current;
-    const nextIndex = (currentIdx + 1) % questions.length;
-    console.log(
-      `Close thank you: Navigating from question ${
-        currentIdx + 1
-      } to question ${nextIndex + 1}`
-    );
+    // Update ref immediately
+    currentIndexRef.current = nextIndex;
+
+    // Update state
     setCurrentIndex(nextIndex);
+
+    // Scroll directly
+    setTimeout(() => {
+      if (scrollRef.current) {
+        const cardWidth = scrollRef.current.clientWidth * 0.85;
+        const gap = 16;
+        const totalCardWidth = cardWidth + gap;
+        const targetScroll = nextIndex * totalCardWidth;
+
+        console.log(
+          `🎯 Scrolling to index ${nextIndex}, position ${targetScroll}`
+        );
+
+        isManualScrollRef.current = true;
+        scrollRef.current.scrollTo({
+          left: targetScroll,
+          behavior: "smooth",
+        });
+
+        setTimeout(() => {
+          isManualScrollRef.current = false;
+          isNavigatingRef.current = false;
+          console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
+        }, 500);
+      }
+    }, 50);
   };
+
+  // Also update your handleQuestionFilter to prevent conflicts:
+  const handleQuestionFilter = (questionId: string | null) => {
+    setSelectedQuestion(questionId);
+
+    // If a specific prompt is selected, navigate to that prompt in the slider
+    if (questionId) {
+      const questionIndex = questions.findIndex((q) => q.id === questionId);
+      if (questionIndex !== -1) {
+        console.log(`Filter: Navigating to prompt ${questionIndex + 1}`);
+        setCurrentIndex(questionIndex);
+        currentIndexRef.current = questionIndex;
+
+        if (scrollRef.current) {
+          const cardWidth = scrollRef.current.clientWidth * 0.85;
+          const gap = 16;
+          const totalCardWidth = cardWidth + gap;
+          const targetScroll = questionIndex * totalCardWidth;
+
+          isManualScrollRef.current = true;
+          scrollRef.current.scrollTo({
+            left: targetScroll,
+            behavior: "smooth",
+          });
+
+          setTimeout(() => {
+            isManualScrollRef.current = false;
+          }, 500);
+        }
+      }
+    }
+  };
+  // useEffect(() => {
+  //   currentIndexRef.current = currentIndex;
+  //   console.log(
+  //     `Ref updated: currentIndexRef = ${currentIndexRef.current}, currentIndex = ${currentIndex}`
+  //   );
+  // }, [currentIndex,handleCloseThankYou]);
 
   const handleCloseForm = () => {
     setShowUserForm(false);
@@ -530,23 +631,14 @@ export default function UnifiedSurvey() {
     );
   };
 
-  // UPDATED: Handle question filter with navigation
-  const handleQuestionFilter = (questionId: string | null) => {
-    setSelectedQuestion(questionId);
-
-    // If a specific prompt is selected, navigate to that prompt in the slider
-    if (questionId) {
-      navigateToPrompt(questionId);
-    }
-  };
-
   // Handle scroll to update current index - COMPLETELY REWRITTEN
   const handleScroll = () => {
     if (
       !scrollRef.current ||
       showUserForm ||
       showThankYou ||
-      isManualScrollRef.current
+      isManualScrollRef.current ||
+      preventScrollUpdate
     )
       return;
 
@@ -568,10 +660,8 @@ export default function UnifiedSurvey() {
       );
       setCurrentIndex(newIndex);
 
-      // Update selected question filter based on current index
-      if (questions[newIndex]) {
-        setSelectedQuestion(questions[newIndex].id);
-      }
+      // REMOVED: Don't update selectedQuestion here
+      // Let the user control selectedQuestion independently through filters
     }
   };
 
@@ -584,11 +674,16 @@ export default function UnifiedSurvey() {
   }, [questions.length, currentIndex, showUserForm, showThankYou]);
 
   useEffect(() => {
+    console.log(
+      `Scroll effect triggered: currentIndex=${currentIndex}, showUserForm=${showUserForm}, showThankYou=${showThankYou}, preventScrollUpdate=${preventScrollUpdate}`
+    );
+
     if (
       scrollRef.current &&
       !showUserForm &&
       !showThankYou &&
-      !isManualScrollRef.current
+      !isManualScrollRef.current &&
+      !preventScrollUpdate
     ) {
       const cardWidth = scrollRef.current.clientWidth * 0.85;
       const gap = 16;
@@ -598,27 +693,31 @@ export default function UnifiedSurvey() {
       const currentScroll = scrollRef.current.scrollLeft;
       const scrollDifference = Math.abs(currentScroll - targetScroll);
 
+      // Only scroll if we're significantly off position
       if (scrollDifference > totalCardWidth * 0.1) {
-        // 10% of card width
         console.log(
           `Scrolling to index ${currentIndex}, position ${targetScroll}`
         );
+
+        isManualScrollRef.current = true;
         scrollRef.current.scrollTo({
           left: targetScroll,
           behavior: "smooth",
         });
+
+        setTimeout(() => {
+          isManualScrollRef.current = false;
+        }, 500);
       }
     }
-  }, [currentIndex, showUserForm, showThankYou]);
+  }, [currentIndex, showUserForm, showThankYou, preventScrollUpdate]);
 
   const handleDotClick = (index: number) => {
     console.log(`Dot clicked: Navigating to index ${index}`);
     setCurrentIndex(index);
 
-    // Update selected question filter based on dot click
-    if (questions[index]) {
-      setSelectedQuestion(questions[index].id);
-    }
+    // REMOVED: Don't update selectedQuestion here
+    // Let the user control selectedQuestion independently through filters
 
     if (scrollRef.current) {
       const cardWidth = scrollRef.current.clientWidth * 0.85;
@@ -735,11 +834,14 @@ export default function UnifiedSurvey() {
                         </button>
 
                         <div className="space-y-4">
-                          <div className="mb-6 pr-14 md:pr-0"> {/* More padding on mobile, none on medium+ screens */}
-  <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#133844] text-start">
-    Please provide your details to complete the submission.
-  </h2>
-</div>
+                          <div className="mb-6 pr-14 md:pr-0">
+                            {" "}
+                            {/* More padding on mobile, none on medium+ screens */}
+                            <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#133844] text-start">
+                              Please provide your details to complete the
+                              submission.
+                            </h2>
+                          </div>
                           <hr className="border-t-1 border-[#133844]" />
 
                           <div className="space-y-6">
@@ -787,8 +889,10 @@ export default function UnifiedSurvey() {
                                 }`}
                                 placeholder="Email"
                               />
-                              <p className="font-open-regular text-[10px] md:text-[12px] text-[#133844]/80 leading-relaxed text-left mt-1"> 
-                              Please add your email to receive updates on the ongoing conversation. </p>
+                              <p className="font-open-regular text-[10px] md:text-[12px] text-[#133844]/80 leading-relaxed text-left mt-1">
+                                Please add your email to receive updates on the
+                                ongoing conversation.{" "}
+                              </p>
                               {formErrors.email && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
                                   {formErrors.email}
@@ -841,7 +945,9 @@ export default function UnifiedSurvey() {
                                     clearFieldError("gdprConsent");
                                   }}
                                   className={`custom-checkbox ${
-                                    formErrors.gdprConsent ? "border-red-500" : ""
+                                    formErrors.gdprConsent
+                                      ? "border-red-500"
+                                      : ""
                                   }`}
                                 />
                               </div>
@@ -849,9 +955,17 @@ export default function UnifiedSurvey() {
                                 htmlFor="gdpr"
                                 className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
                               >
-                                By clicking Submit, you confirm that you are over 18 years old and agree to our <a href="https://www.cambridge.org/legal/privacy" target="_blank"
-                                rel="noopener noreferrer" className="text-[#0056b3] hover:text-[#003d80] underline">Privacy 
-                                Policy</a>.* 
+                                By clicking Submit, you confirm that you are
+                                over 18 years old and agree to our{" "}
+                                <a
+                                  href="https://www.cambridge.org/legal/privacy"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#0056b3] hover:text-[#003d80] underline"
+                                >
+                                  Privacy Policy
+                                </a>
+                                .*
                               </label>
                             </div>
                             {formErrors.gdprConsent && (
@@ -875,7 +989,9 @@ export default function UnifiedSurvey() {
                                     clearFieldError("publicConsent");
                                   }}
                                   className={`custom-checkbox ${
-                                    formErrors.publicConsent ? "border-red-500" : ""
+                                    formErrors.publicConsent
+                                      ? "border-red-500"
+                                      : ""
                                   }`}
                                 />
                               </div>
@@ -883,7 +999,9 @@ export default function UnifiedSurvey() {
                                 htmlFor="publicConsent"
                                 className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
                               >
-                                By clicking Submit, you confirm that you understand that your name, country, and organisation may be displayed publicly.*
+                                By clicking Submit, you confirm that you
+                                understand that your name, country, and
+                                organisation may be displayed publicly.*
                               </label>
                             </div>
                             {formErrors.publicConsent && (
@@ -929,7 +1047,8 @@ export default function UnifiedSurvey() {
 
                         <div className="mb-6">
                           <h2 className="text-[12px] md:text-[14px] font-open-bold text-[#000000] text-start ">
-                            Thank you for submitting your insights. Our team will review your response shortly.
+                            Thank you for submitting your insights. Our team
+                            will review your response shortly.
                           </h2>
                           <p className="text-[15px] md:text-[18px] font-value-regular text-[#000000] text-start  mt-4">
                             Do you have a prompt of your own that you would like
@@ -1002,7 +1121,11 @@ export default function UnifiedSurvey() {
                             <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] md:h-[50px] text-start  mt-2">
                               {question.question}
                             </h2>
-                            <p className="text-[10px] md:text-[12px] font-open-thin text-[#133844] text-start mt-3"> Please do not include personal information such as names, age, etc.</p>
+                            <p className="text-[10px] md:text-[12px] font-open-thin text-[#133844] text-start mt-3">
+                              {" "}
+                              Please do not include personal information such as
+                              names, age, etc.
+                            </p>
                           </div>
                           <hr className="border-t-1 border-[#133844]" />
 
