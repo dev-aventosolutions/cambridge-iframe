@@ -790,7 +790,7 @@ export default function UnifiedSurvey() {
                                 }`}
                                 placeholder="Email"
                               />
-                              <p className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-1"> 
+                              <p className="font-open-regular text-[10px] md:text-[12px] text-[#133844]/80 leading-relaxed text-left mt-1"> 
                               Please add your email to receive updates on the ongoing conversation. </p>
                               {formErrors.email && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
@@ -851,9 +851,9 @@ export default function UnifiedSurvey() {
     htmlFor="gdpr"
     className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
   >
-    By clicking Submit, you confirm that you are over 18 years old, agree to our <a href="https://www.cambridge.org/legal/privacy" target="_blank"
+    By clicking Submit, you confirm that you are over 18 years old and agree to our <a href="https://www.cambridge.org/legal/privacy" target="_blank"
     rel="noopener noreferrer" className="text-[#0056b3] hover:text-[#003d80] underline">Privacy 
-    Policy</a>, and understand that your name, country, and organisation may be displayed publicly.*
+    Policy</a>.* 
   </label>
 </div>
                             {formErrors.gdprConsent && (
@@ -972,6 +972,7 @@ export default function UnifiedSurvey() {
                             <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] md:h-[50px] text-start  mt-2">
                               {question.question}
                             </h2>
+                            <p className="text-[10px] md:text-[12px] font-open-thin text-[#133844] text-start mt-3"> Please do not include personal information such as names, age, etc.</p>
                           </div>
                           <hr className="border-t-1 border-[#133844]" />
 
