@@ -144,17 +144,17 @@ export default function UnifiedSurvey() {
       isValid = false;
     }
 
-    // Email validation
-    if (!userInfo.email.trim()) {
-      errors.email = "This field is required";
-      isValid = false;
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userInfo.email)) {
-        errors.email = "Please enter a valid email address";
-        isValid = false;
-      }
-    }
+    // // Email validation
+    // if (!userInfo.email.trim()) {
+    //   errors.email = "This field is required";
+    //   isValid = false;
+    // } else {
+    //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    //   if (!emailRegex.test(userInfo.email)) {
+    //     errors.email = "Please enter a valid email address";
+    //     isValid = false;
+    //   }
+    // }
 
     // GDPR consent validation
     if (!userInfo.gdprConsent) {
@@ -739,7 +739,7 @@ export default function UnifiedSurvey() {
 
                         <div className="space-y-4">
                           <div className="mb-6">
-                            <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#000000] text-start ">
+                            <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#133844] text-start ">
                               Please provide your details to complete the
                               submission.
                             </h2>
@@ -764,7 +764,7 @@ export default function UnifiedSurvey() {
                                     ? "border-red-500"
                                     : "border-[#133844]/30"
                                 }`}
-                                placeholder="Full Name *"
+                                placeholder="Name *"
                               />
                               {formErrors.name && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
@@ -789,8 +789,10 @@ export default function UnifiedSurvey() {
                                     ? "border-red-500"
                                     : "border-[#133844]/30"
                                 }`}
-                                placeholder="Email *"
+                                placeholder="Email"
                               />
+                              <p className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-1"> 
+                              Please add your email to receive updates on the ongoing conversation. </p>
                               {formErrors.email && (
                                 <p className="text-red-500 text-[10px] mt-1 font-open-regular">
                                   {formErrors.email}
@@ -846,10 +848,10 @@ export default function UnifiedSurvey() {
                               />
                               <label
                                 htmlFor="gdpr"
-                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-1"
+                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-0"
                               >
-                                By clicking submit, you agree to our privacy
-                                policy. *
+                                By clicking Submit, you confirm that you are over 18 years old, agree to our Privacy 
+                                Policy, and understand that your name, country, and organisation may be displayed publicly.*
                               </label>
                             </div>
                             {formErrors.gdprConsent && (
@@ -895,7 +897,7 @@ export default function UnifiedSurvey() {
 
                         <div className="mb-6">
                           <h2 className="text-[12px] md:text-[14px] font-open-bold text-[#000000] text-start ">
-                            THANK YOU FOR YOUR ANSWERS
+                            Thank you for submitting your insights. Our team will review your response shortly.
                           </h2>
                           <p className="text-[15px] md:text-[18px] font-value-regular text-[#000000] text-start  mt-4">
                             Do you have a prompt of your own that you would like
@@ -965,7 +967,7 @@ export default function UnifiedSurvey() {
                           </div>
 
                           <div className="mb-2">
-                            <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] h-[70px] md:h-[50px] text-start  mt-2">
+                            <h2 className="text-[15px] md:text-[18px] font-value-regular text-[#000000] md:h-[50px] text-start  mt-2">
                               {question.question}
                             </h2>
                           </div>
