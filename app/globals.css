@@ -202,8 +202,10 @@ body {
 /* Improve touch target on mobile */
 @media (max-width: 640px) {
   .custom-thumb {
-    /* Increase touch target size while keeping visual size */
-    padding: 8px 0;
-    margin: -8px 0;
+    
+    width: 12px;
+    /* For mobile: (5px / 2) - (12px / 2) = 2.5px - 6px = -3.5px */
+    right: 1.5px;
+    min-height: 60px;
   }
 }
