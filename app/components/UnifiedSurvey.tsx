@@ -831,29 +831,31 @@ export default function UnifiedSurvey() {
                             </div>
 
                             <div className="flex items-start gap-3 pt-2">
-                              <input
-                                type="checkbox"
-                                id="gdpr"
-                                checked={userInfo.gdprConsent}
-                                onChange={(e) => {
-                                  setUserInfo({
-                                    ...userInfo,
-                                    gdprConsent: e.target.checked,
-                                  });
-                                  clearFieldError("gdprConsent");
-                                }}
-                                className={`custom-checkbox mt-0.5 ${
-                                  formErrors.gdprConsent ? "border-red-500" : ""
-                                }`}
-                              />
-                              <label
-                                htmlFor="gdpr"
-                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left mt-0"
-                              >
-                                By clicking Submit, you confirm that you are over 18 years old, agree to our Privacy 
-                                Policy, and understand that your name, country, and organisation may be displayed publicly.*
-                              </label>
-                            </div>
+  <div className="flex-shrink-0 mt-0.5">
+    <input
+      type="checkbox"
+      id="gdpr"
+      checked={userInfo.gdprConsent}
+      onChange={(e) => {
+        setUserInfo({
+          ...userInfo,
+          gdprConsent: e.target.checked,
+        });
+        clearFieldError("gdprConsent");
+      }}
+      className={`custom-checkbox ${
+        formErrors.gdprConsent ? "border-red-500" : ""
+      }`}
+    />
+  </div>
+  <label
+    htmlFor="gdpr"
+    className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
+  >
+    By clicking Submit, you confirm that you are over 18 years old, agree to our Privacy 
+    Policy, and understand that your name, country, and organisation may be displayed publicly.*
+  </label>
+</div>
                             {formErrors.gdprConsent && (
                               <p className="text-red-500 text-[10px] font-open-regular -mt-5">
                                 {formErrors.gdprConsent}
