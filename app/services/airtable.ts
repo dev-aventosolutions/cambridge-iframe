@@ -30,6 +30,7 @@ export interface Answer {
   submittedAt: string;
   status?: string;
   suggested_prompt?: string;
+  public_consent?: boolean;
 }
 
 export interface UserInfo {
@@ -38,6 +39,7 @@ export interface UserInfo {
   country: string;
   organization?: string;
   gdprConsent: boolean;
+  publicConsent: boolean;
 }
 
 export const airtableService = {
@@ -85,6 +87,7 @@ export const airtableService = {
           userCountry: userInfo.country,
           userOrganization: userInfo.organization,
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
+          public_consent: userInfo.publicConsent ? "Yes" : "No",
           submittedAt: new Date().toISOString(),
           status: "Pending",
           suggested_prompt: "",
@@ -123,6 +126,7 @@ export const airtableService = {
           userCountry: userInfo.country,
           userOrganization: userInfo.organization,
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
+          public_consent: userInfo.publicConsent ? "Yes" : "No",
           submittedAt: new Date().toISOString(),
           status: "Pending",
           suggested_prompt: "",
@@ -186,6 +190,7 @@ export const airtableService = {
           userCountry: userInfo.country,
           userOrganization: userInfo.organization,
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
+          public_consent: userInfo.publicConsent ? "Yes" : "No",
           submittedAt: new Date().toISOString(),
           status: "Pending",
         },
@@ -221,6 +226,7 @@ export const airtableService = {
         submittedAt: record.fields.submittedAt,
         status: record.fields.status || "Pending",
         suggested_prompt: record.fields.suggested_prompt,
+        public_consent: record.fields.public_consent,
       }));
     } catch (error) {
       console.error("Error fetching answers:", error);

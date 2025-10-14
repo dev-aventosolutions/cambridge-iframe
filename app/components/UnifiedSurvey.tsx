@@ -15,6 +15,7 @@ export default function UnifiedSurvey() {
     organization: "",
     country: "",
     gdprConsent: false,
+    publicConsent: false,
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,7 @@ export default function UnifiedSurvey() {
     name: "",
     email: "",
     gdprConsent: "",
+    publicConsent: "",
   });
 
   const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
@@ -128,12 +130,13 @@ export default function UnifiedSurvey() {
     }
   };
 
-  // Updated validation function with error state management
+  // Updated validation function with public consent validation
   const validateUserInfo = (): boolean => {
     const errors = {
       name: "",
       email: "",
       gdprConsent: "",
+      publicConsent: "",
     };
 
     let isValid = true;
@@ -144,21 +147,15 @@ export default function UnifiedSurvey() {
       isValid = false;
     }
 
-    // // Email validation
-    // if (!userInfo.email.trim()) {
-    //   errors.email = "This field is required";
-    //   isValid = false;
-    // } else {
-    //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    //   if (!emailRegex.test(userInfo.email)) {
-    //     errors.email = "Please enter a valid email address";
-    //     isValid = false;
-    //   }
-    // }
-
     // GDPR consent validation
     if (!userInfo.gdprConsent) {
       errors.gdprConsent = "Please agree to our Privacy Policy to proceed.";
+      isValid = false;
+    }
+
+    // Public consent validation
+    if (!userInfo.publicConsent) {
+      errors.publicConsent = "Please confirm your understanding that your name, country, and organisation may be displayed publicly.";
       isValid = false;
     }
 
@@ -359,7 +356,7 @@ export default function UnifiedSurvey() {
       return;
     }
 
-    if (!hasSubmittedBefore || !userInfo.gdprConsent) {
+    if (!hasSubmittedBefore || !userInfo.gdprConsent || !userInfo.publicConsent) {
       setShowUserForm(true);
       return;
     }
@@ -493,7 +490,7 @@ export default function UnifiedSurvey() {
   const handleCloseForm = () => {
     setShowUserForm(false);
     // Clear form errors when closing form
-    setFormErrors({ name: "", email: "", gdprConsent: "" });
+    setFormErrors({ name: "", email: "", gdprConsent: "", publicConsent: "" });
   };
 
   const nextQuestion = () => {
@@ -829,36 +826,69 @@ export default function UnifiedSurvey() {
                               />
                             </div>
 
+                            {/* GDPR Consent Checkbox */}
                             <div className="flex items-start gap-3 pt-2">
-  <div className="flex-shrink-0 mt-0.5">
-    <input
-      type="checkbox"
-      id="gdpr"
-      checked={userInfo.gdprConsent}
-      onChange={(e) => {
-        setUserInfo({
-          ...userInfo,
-          gdprConsent: e.target.checked,
-        });
-        clearFieldError("gdprConsent");
-      }}
-      className={`custom-checkbox ${
-        formErrors.gdprConsent ? "border-red-500" : ""
-      }`}
-    />
-  </div>
-  <label
-    htmlFor="gdpr"
-    className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
-  >
-    By clicking Submit, you confirm that you are over 18 years old and agree to our <a href="https://www.cambridge.org/legal/privacy" target="_blank"
-    rel="noopener noreferrer" className="text-[#0056b3] hover:text-[#003d80] underline">Privacy 
-    Policy</a>.* 
-  </label>
-</div>
+                              <div className="flex-shrink-0 mt-0.5">
+                                <input
+                                  type="checkbox"
+                                  id="gdpr"
+                                  checked={userInfo.gdprConsent}
+                                  onChange={(e) => {
+                                    setUserInfo({
+                                      ...userInfo,
+                                      gdprConsent: e.target.checked,
+                                    });
+                                    clearFieldError("gdprConsent");
+                                  }}
+                                  className={`custom-checkbox ${
+                                    formErrors.gdprConsent ? "border-red-500" : ""
+                                  }`}
+                                />
+                              </div>
+                              <label
+                                htmlFor="gdpr"
+                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
+                              >
+                                By clicking Submit, you confirm that you are over 18 years old and agree to our <a href="https://www.cambridge.org/legal/privacy" target="_blank"
+                                rel="noopener noreferrer" className="text-[#0056b3] hover:text-[#003d80] underline">Privacy 
+                                Policy</a>.* 
+                              </label>
+                            </div>
                             {formErrors.gdprConsent && (
                               <p className="text-red-500 text-[10px] font-open-regular -mt-5">
                                 {formErrors.gdprConsent}
+                              </p>
+                            )}
+
+                            {/* Public Consent Checkbox */}
+                            <div className="flex items-start gap-3 pt-2">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <input
+                                  type="checkbox"
+                                  id="publicConsent"
+                                  checked={userInfo.publicConsent}
+                                  onChange={(e) => {
+                                    setUserInfo({
+                                      ...userInfo,
+                                      publicConsent: e.target.checked,
+                                    });
+                                    clearFieldError("publicConsent");
+                                  }}
+                                  className={`custom-checkbox ${
+                                    formErrors.publicConsent ? "border-red-500" : ""
+                                  }`}
+                                />
+                              </div>
+                              <label
+                                htmlFor="publicConsent"
+                                className="font-open-regular text-[10px] md:text-[14px] text-[#133844]/80 leading-relaxed text-left flex-1"
+                              >
+                                By clicking Submit, you confirm that you understand that your name, country, and organisation may be displayed publicly.*
+                              </label>
+                            </div>
+                            {formErrors.publicConsent && (
+                              <p className="text-red-500 text-[10px] font-open-regular -mt-5">
+                                {formErrors.publicConsent}
                               </p>
                             )}
                           </div>
@@ -1004,7 +1034,8 @@ export default function UnifiedSurvey() {
                                 onClick={() => {
                                   if (
                                     hasSubmittedBefore &&
-                                    userInfo.gdprConsent
+                                    userInfo.gdprConsent &&
+                                    userInfo.publicConsent
                                   ) {
                                     handleDirectSubmit();
                                   } else {
