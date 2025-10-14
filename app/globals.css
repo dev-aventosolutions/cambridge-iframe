@@ -154,6 +154,7 @@ body {
   scrollbar-width: none; 
   -ms-overflow-style: none; 
 }
+/* the visual floating thumb */
 .custom-thumb {
   position: absolute;
   top: 0;
@@ -167,16 +168,20 @@ body {
   z-index: 50;
   cursor: grab; /* Change cursor to indicate it's draggable */
   user-select: none; /* Prevent text selection during drag */
+  -webkit-user-select: none; /* For Safari */
+  -webkit-touch-callout: none; /* Disable the callout shown when you touch and hold a touch target */
+  touch-action: none; /* Prevent browser handling of all panning and zooming gestures */
 }
 
 .custom-thumb:active {
-  cursor: pointer; /* Change cursor when actively dragging */
+  cursor: grabbing; /* Change cursor when actively dragging */
 }
 
 @media (max-width: 640px) {
   .custom-thumb {
-    width: 12px; /* smaller width on mobile */
+    width: 20px; /* Slightly larger on mobile for better touch target */
     right: 1.5px;
+    min-height: 60px; /* Slightly smaller minimum height */
   }
 }
 
@@ -192,4 +197,13 @@ body {
 /* Add hover effect for better UX */
 .custom-thumb:hover {
   background: #00A8A1; /* Slightly darker on hover */
+}
+
+/* Improve touch target on mobile */
+@media (max-width: 640px) {
+  .custom-thumb {
+    /* Increase touch target size while keeping visual size */
+    padding: 8px 0;
+    margin: -8px 0;
+  }
 }

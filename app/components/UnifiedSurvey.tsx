@@ -273,42 +273,136 @@ useEffect(() => {
     }));
   };
 
-  useEffect(() => {
-    const c = containerRef.current;
-    const thumb = thumbRef.current;
-    if (!c || !thumb) return;
+  // Replace your current useEffect for the custom scrollbar with this:
+useEffect(() => {
+  const c = containerRef.current;
+  const thumb = thumbRef.current;
+  if (!c || !thumb) return;
 
-    const MIN_THUMB_HEIGHT = 50;
-    const update = () => {
-      const clientH = c.clientHeight;
-      const scrollH = c.scrollHeight;
-      const scrollTop = c.scrollTop;
+  const MIN_THUMB_HEIGHT = 50;
 
-      let thumbH = Math.max(MIN_THUMB_HEIGHT, (clientH / scrollH) * clientH);
-      thumbH = Math.min(clientH, thumbH);
-      thumb.style.height = `${thumbH}px`;
+  const updateThumb = () => {
+    const clientH = c.clientHeight;
+    const scrollH = c.scrollHeight;
+    const scrollTop = c.scrollTop;
 
-      const maxScroll = Math.max(0, scrollH - clientH);
-      const maxThumbTop = Math.max(0, clientH - thumbH);
-      const thumbTop =
-        maxScroll === 0 ? 0 : (scrollTop / maxScroll) * maxThumbTop;
-      thumb.style.transform = `translateY(${thumbTop}px)`;
-    };
+    let thumbH = Math.max(MIN_THUMB_HEIGHT, (clientH / scrollH) * clientH);
+    thumbH = Math.min(clientH, thumbH);
+    thumb.style.height = `${thumbH}px`;
 
-    update();
+    const maxScroll = Math.max(0, scrollH - clientH);
+    const maxThumbTop = Math.max(0, clientH - thumbH);
+    const thumbTop = maxScroll === 0 ? 0 : (scrollTop / maxScroll) * maxThumbTop;
+    thumb.style.transform = `translateY(${thumbTop}px)`;
+  };
 
-    c.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+  // Mouse down event for thumb drag
+  const handleThumbMouseDown = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartScrollTopRef.current = c.scrollTop;
+    
+    // Add event listeners for drag
+    document.addEventListener('mousemove', handleThumbMouseMove);
+    document.addEventListener('mouseup', handleThumbMouseUp);
+    
+    // Change cursor style
+    document.body.style.cursor = 'grabbing';
+    thumb.style.cursor = 'grabbing';
+  };
 
-    const ro = new MutationObserver(update);
-    ro.observe(c, { childList: true, subtree: true });
+  // Touch start event for mobile
+  const handleThumbTouchStart = (e: TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.touches[0].clientY;
+    dragStartScrollTopRef.current = c.scrollTop;
+    
+    // Add event listeners for touch drag
+    document.addEventListener('touchmove', handleThumbTouchMove, { passive: false });
+    document.addEventListener('touchend', handleThumbTouchEnd);
+  };
 
-    return () => {
-      c.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-      ro.disconnect();
-    };
-  }, [filteredAnswers]);
+  // Mouse move event for thumb drag
+  const handleThumbMouseMove = (e: MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    const deltaY = e.clientY - dragStartYRef.current;
+    const scrollRatio = c.scrollHeight / c.clientHeight;
+    const newScrollTop = dragStartScrollTopRef.current + deltaY * scrollRatio;
+    
+    // Bound the scroll position
+    c.scrollTop = Math.max(0, Math.min(newScrollTop, c.scrollHeight - c.clientHeight));
+  };
+
+  // Touch move event for mobile
+  const handleThumbTouchMove = (e: TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    e.preventDefault(); // Prevent default to stop page scrolling
+    
+    const deltaY = e.touches[0].clientY - dragStartYRef.current;
+    const scrollRatio = c.scrollHeight / c.clientHeight;
+    const newScrollTop = dragStartScrollTopRef.current + deltaY * scrollRatio;
+    
+    // Bound the scroll position
+    c.scrollTop = Math.max(0, Math.min(newScrollTop, c.scrollHeight - c.clientHeight));
+  };
+
+  // Mouse up event to end drag
+  const handleThumbMouseUp = () => {
+    isDraggingRef.current = false;
+    
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleThumbMouseMove);
+    document.removeEventListener('mouseup', handleThumbMouseUp);
+    
+    // Reset cursor
+    document.body.style.cursor = '';
+    thumb.style.cursor = 'grab';
+  };
+
+  // Touch end event for mobile
+  const handleThumbTouchEnd = () => {
+    isDraggingRef.current = false;
+    
+    // Remove event listeners
+    document.removeEventListener('touchmove', handleThumbTouchMove);
+    document.removeEventListener('touchend', handleThumbTouchEnd);
+  };
+
+  // Initialize thumb
+  updateThumb();
+
+  // Add event listeners for both mouse and touch
+  thumb.addEventListener('mousedown', handleThumbMouseDown);
+  thumb.addEventListener('touchstart', handleThumbTouchStart, { passive: false });
+  
+  c.addEventListener("scroll", updateThumb, { passive: true });
+  window.addEventListener("resize", updateThumb);
+
+  const ro = new MutationObserver(updateThumb);
+  ro.observe(c, { childList: true, subtree: true });
+
+  return () => {
+    thumb.removeEventListener('mousedown', handleThumbMouseDown);
+    thumb.removeEventListener('touchstart', handleThumbTouchStart);
+    
+    document.removeEventListener('mousemove', handleThumbMouseMove);
+    document.removeEventListener('mouseup', handleThumbMouseUp);
+    document.removeEventListener('touchmove', handleThumbTouchMove);
+    document.removeEventListener('touchend', handleThumbTouchEnd);
+    
+    c.removeEventListener("scroll", updateThumb);
+    window.removeEventListener("resize", updateThumb);
+    ro.disconnect();
+  };
+}, [filteredAnswers]);
 
   useEffect(() => {
     loadQuestions();
