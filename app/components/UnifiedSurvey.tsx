@@ -738,12 +738,11 @@ export default function UnifiedSurvey() {
                         </button>
 
                         <div className="space-y-4">
-                          <div className="mb-6">
-                            <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#133844] text-start ">
-                              Please provide your details to complete the
-                              submission.
-                            </h2>
-                          </div>
+                          <div className="mb-6 pr-14 md:pr-0"> {/* More padding on mobile, none on medium+ screens */}
+  <h2 className="text-[14px] md:text-[18px] font-open-regular text-[#133844] text-start">
+    Please provide your details to complete the submission.
+  </h2>
+</div>
                           <hr className="border-t-1 border-[#133844]" />
 
                           <div className="space-y-6">
