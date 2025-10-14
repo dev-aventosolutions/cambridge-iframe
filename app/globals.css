@@ -154,8 +154,6 @@ body {
   scrollbar-width: none; 
   -ms-overflow-style: none; 
 }
-
-/* the visual floating thumb */
 .custom-thumb {
   position: absolute;
   top: 0;
@@ -167,7 +165,12 @@ body {
   transform: translateY(0);
   transition: transform 0.08s linear;
   z-index: 50;
-  pointer-events: none;    
+  cursor: grab; /* Change cursor to indicate it's draggable */
+  user-select: none; /* Prevent text selection during drag */
+}
+
+.custom-thumb:active {
+  cursor: pointer; /* Change cursor when actively dragging */
 }
 
 @media (max-width: 640px) {
@@ -186,49 +189,7 @@ body {
   border-radius: 12px;
 }
 
-/* keep track area transparent */
-.custom-scrollbar-track-fake { 
-  position: absolute;
-  top: 0; right: 10px;
-  height: 100%;
-  width: 25px;
-  pointer-events: none;
-}
-
-
-/* ==============================
-   Custom Button Positioning (Desktop)
-================================= */
-@media (min-width: 1024px) {
-  .prev-btn {
-    left: -2.5rem; 
-  }
-
-  .next-btn {
-    right: 4rem; 
-  }
-}
-
-
-
-/* Between 1024px and 1439px → make more pill-like */
-/* @media (min-width: 1024px) and (max-width: 1439px) {
-  .prompt-badge {
-    padding: 3px 14px !important; 
-    border-radius: 9999px !important;
-    font-size: 10px !important;
-    white-space: nowrap !important; 
-  }
-} */
-
-
-/* Hide scrollbar for the entire page but keep scrolling functional */
-html, body {
-  scrollbar-width: none;
-  -ms-overflow-style: none; 
-}
-
-html::-webkit-scrollbar, 
-body::-webkit-scrollbar {
-  display: none; 
+/* Add hover effect for better UX */
+.custom-thumb:hover {
+  background: #00A8A1; /* Slightly darker on hover */
 }

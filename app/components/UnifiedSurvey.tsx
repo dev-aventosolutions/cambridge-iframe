@@ -45,6 +45,98 @@ export default function UnifiedSurvey() {
   });
 
   const [submittedRecordIds, setSubmittedRecordIds] = useState<string[]>([]);
+// Add these new refs and state variables at the top of your component
+const isDraggingRef = useRef(false);
+const dragStartYRef = useRef(0);
+const dragStartScrollTopRef = useRef(0);
+
+// Replace your current useEffect for the custom scrollbar with this:
+useEffect(() => {
+  const c = containerRef.current;
+  const thumb = thumbRef.current;
+  if (!c || !thumb) return;
+
+  const MIN_THUMB_HEIGHT = 50;
+
+  const updateThumb = () => {
+    const clientH = c.clientHeight;
+    const scrollH = c.scrollHeight;
+    const scrollTop = c.scrollTop;
+
+    let thumbH = Math.max(MIN_THUMB_HEIGHT, (clientH / scrollH) * clientH);
+    thumbH = Math.min(clientH, thumbH);
+    thumb.style.height = `${thumbH}px`;
+
+    const maxScroll = Math.max(0, scrollH - clientH);
+    const maxThumbTop = Math.max(0, clientH - thumbH);
+    const thumbTop = maxScroll === 0 ? 0 : (scrollTop / maxScroll) * maxThumbTop;
+    thumb.style.transform = `translateY(${thumbTop}px)`;
+  };
+
+  // Mouse down event for thumb drag
+  const handleThumbMouseDown = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartScrollTopRef.current = c.scrollTop;
+    
+    // Add event listeners for drag
+    document.addEventListener('mousemove', handleThumbMouseMove);
+    document.addEventListener('mouseup', handleThumbMouseUp);
+    
+    // Change cursor style
+    document.body.style.cursor = 'grabbing';
+    thumb.style.cursor = 'grabbing';
+  };
+
+  // Mouse move event for thumb drag
+  const handleThumbMouseMove = (e: MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    const deltaY = e.clientY - dragStartYRef.current;
+    const scrollRatio = c.scrollHeight / c.clientHeight;
+    const newScrollTop = dragStartScrollTopRef.current + deltaY * scrollRatio;
+    
+    // Bound the scroll position
+    c.scrollTop = Math.max(0, Math.min(newScrollTop, c.scrollHeight - c.clientHeight));
+  };
+
+  // Mouse up event to end drag
+  const handleThumbMouseUp = () => {
+    isDraggingRef.current = false;
+    
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleThumbMouseMove);
+    document.removeEventListener('mouseup', handleThumbMouseUp);
+    
+    // Reset cursor
+    document.body.style.cursor = '';
+    thumb.style.cursor = 'grab';
+  };
+
+  // Initialize thumb
+  updateThumb();
+
+  // Add event listeners
+  thumb.addEventListener('mousedown', handleThumbMouseDown);
+  c.addEventListener("scroll", updateThumb, { passive: true });
+  window.addEventListener("resize", updateThumb);
+
+  const ro = new MutationObserver(updateThumb);
+  ro.observe(c, { childList: true, subtree: true });
+
+  return () => {
+    thumb.removeEventListener('mousedown', handleThumbMouseDown);
+    document.removeEventListener('mousemove', handleThumbMouseMove);
+    document.removeEventListener('mouseup', handleThumbMouseUp);
+    c.removeEventListener("scroll", updateThumb);
+    window.removeEventListener("resize", updateThumb);
+    ro.disconnect();
+  };
+}, [filteredAnswers]);
+  
 
   const CHARACTER_LIMIT = 1000;
   const ANSWERS_PER_PAGE = 4;
@@ -56,7 +148,6 @@ export default function UnifiedSurvey() {
   const currentIndexRef = useRef(0);
 
   const isManualScrollRef = useRef(false);
-
 
   const handleScrollClick = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -581,54 +672,11 @@ export default function UnifiedSurvey() {
       }
     }
   };
-  // useEffect(() => {
-  //   currentIndexRef.current = currentIndex;
-  //   console.log(
-  //     `Ref updated: currentIndexRef = ${currentIndexRef.current}, currentIndex = ${currentIndex}`
-  //   );
-  // }, [currentIndex,handleCloseThankYou]);
 
   const handleCloseForm = () => {
     setShowUserForm(false);
     // Clear form errors when closing form
     setFormErrors({ name: "", email: "", gdprConsent: "", publicConsent: "" });
-  };
-
-  const nextQuestion = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const prevQuestion = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const hasAnyAnswer = Object.values(answers).some(
-    (ans) => ans.trim().length > 0
-  );
-
-  const getAllAnswers = () => {
-    return filteredAnswers;
-  };
-
-  const getPaginatedAnswers = () => {
-    const startIndex = currentAnswerPage * ANSWERS_PER_PAGE;
-    return getAllAnswers().slice(startIndex, startIndex + ANSWERS_PER_PAGE);
-  };
-
-  const totalAnswerPages = Math.ceil(getAllAnswers().length / ANSWERS_PER_PAGE);
-
-  const nextAnswerPage = () => {
-    setCurrentAnswerPage((prev) => (prev + 1) % totalAnswerPages);
-  };
-
-  const prevAnswerPage = () => {
-    setCurrentAnswerPage(
-      (prev) => (prev - 1 + totalAnswerPages) % totalAnswerPages
-    );
   };
 
   // Handle scroll to update current index - COMPLETELY REWRITTEN
