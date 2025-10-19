@@ -351,17 +351,17 @@ export default function UnifiedSurvey() {
   }, [selectedQuestion, approvedAnswers]);
 
   // Auto-scroll carousel every 5 seconds
-  useEffect(() => {
-    if (filteredAnswers.length <= 1) return;
+  // useEffect(() => {
+  //   if (filteredAnswers.length <= 1) return;
 
-    const timer = setInterval(() => {
-      setCurrentCarouselIndex((prev) =>
-        prev === filteredAnswers.length - 1 ? 0 : prev + 1
-      );
-    }, 5000);
+  //   const timer = setInterval(() => {
+  //     setCurrentCarouselIndex((prev) =>
+  //       prev === filteredAnswers.length - 1 ? 0 : prev + 1
+  //     );
+  //   }, 5000);
 
-    return () => clearInterval(timer);
-  }, [filteredAnswers.length]);
+  //   return () => clearInterval(timer);
+  // }, [filteredAnswers.length]);
 
   // Scroll carousel on index change
   useEffect(() => {
