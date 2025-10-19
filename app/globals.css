@@ -158,11 +158,11 @@ body {
 .custom-thumb {
   position: absolute;
   top: 0;
-  right: -5px;              
+  right: 10px;           
   width: 25px;             
   border-radius: 12px;
   background: #00BDB6;
-  min-height: 70px;        
+  min-height: 60px;        
   transform: translateY(0);
   transition: transform 0.08s linear;
   z-index: 50;
@@ -180,8 +180,8 @@ body {
 @media (max-width: 640px) {
   .custom-thumb {
     width: 20px; /* Slightly larger on mobile for better touch target */
-    right: 1.5px;
-    min-height: 60px; /* Slightly smaller minimum height */
+    right: 10px;
+    min-height: 30px;
   }
 }
 
@@ -196,16 +196,15 @@ body {
 
 /* Add hover effect for better UX */
 .custom-thumb:hover {
-  background: #00A8A1; /* Slightly darker on hover */
+  background: #00A8A1;
 }
 
 /* Improve touch target on mobile */
 @media (max-width: 640px) {
   .custom-thumb {
-    
     width: 12px;
     /* For mobile: (5px / 2) - (12px / 2) = 2.5px - 6px = -3.5px */
-    right: 1.5px;
-    min-height: 60px;
+    right: 16px;
+    min-height:30px;
   }
 }
