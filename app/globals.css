@@ -208,3 +208,86 @@ body {
     min-height:30px;
   }
 }
+
+
+/* Add these styles to your global.css */
+
+/* Featured Answers Carousel Animation */
+@keyframes slideIn {
+  from {
+    opacity: 0.7;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Apply animation to carousel items */
+.carousel-item {
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+/* Ensure last item in carousel doesn't have extra right space */
+.carousel-container .carousel-item:last-child {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Smooth transitions for carousel navigation */
+.carousel-item {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Hover effect for carousel items */
+.carousel-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Custom scrollbar styling for better appearance */
+.carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gradient overlay adjustment for last item */
+.carousel-gradient-overlay {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(207, 249, 240, 0.8) 90%, 
+    rgba(207, 249, 240, 1) 100%
+  );
+}
+
+/* Active dot state with animation */
+.carousel-dot.active {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Ensure proper alignment for all carousel items */
+.carousel-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* Container alignment fix */
+.carousel-container {
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+}

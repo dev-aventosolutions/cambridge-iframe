@@ -1348,122 +1348,126 @@ export default function UnifiedSurvey() {
               )}
 
               {/* Featured Answers Carousel Section */}
-              <div className="mb-12 mt-12 md:flex">
-                <div className="md:min-w-80">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[14px] md:text-[20px] font-open-bold text-[#133844]">
-                      Featured answers:
-                    </h3>
-                  </div>
+              {/* Featured Answers Carousel Section */}
+<div className="mb-12 mt-12 md:flex">
+  <div className="md:min-w-80">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-[14px] md:text-[20px] font-open-bold text-[#133844]">
+        Featured answers:
+      </h3>
+    </div>
 
-                  {/* Filter Badges */}
-                  <div className="flex gap-3 mb-6 flex-wrap">
-                    {questions.map((question, index) => (
-                      <button
-                        key={question.id}
-                        onClick={() => handleQuestionFilter(question.id)}
-                        className={`px-4 py-2 rounded-full text-[12px] md:text-[14px] font-open-regular cursor-pointer transition-all duration-300 ${
-                          selectedQuestion === question.id
-                            ? "bg-[#133844] text-white shadow-lg"
-                            : "bg-[#00BDB6] text-white hover:bg-[#00a89e]"
-                        }`}
-                      >
-                        Prompt {index + 1}
-                      </button>
-                    ))}
-                  </div>
+    {/* Filter Badges */}
+    <div className="flex gap-3 mb-6 flex-wrap">
+      {questions.map((question, index) => (
+        <button
+          key={question.id}
+          onClick={() => handleQuestionFilter(question.id)}
+          className={`px-4 py-2 rounded-full text-[12px] md:text-[14px] font-open-regular cursor-pointer transition-all duration-300 ${
+            selectedQuestion === question.id
+              ? "bg-[#133844] text-white shadow-lg"
+              : "bg-[#00BDB6] text-white hover:bg-[#00a89e]"
+          }`}
+        >
+          Prompt {index + 1}
+        </button>
+      ))}
+    </div>
 
-                  {/* See All Answers Link */}
-                  <button
-                    onClick={() => setShowAllAnswersModal(true)}
-                    className="text-[#133844] text-[13px] md:text-[16px] font-open-regular underline mb-6 hover:text-[#00BDB6] transition-colors cursor-pointer"
-                  >
-                    See all answers
-                  </button>
+    {/* See All Answers Link */}
+    <button
+      onClick={() => setShowAllAnswersModal(true)}
+      className="text-[#133844] text-[13px] md:text-[16px] font-open-regular underline mb-6 hover:text-[#00BDB6] transition-colors cursor-pointer"
+    >
+      See all answers
+    </button>
+  </div>
+
+  <div className="md:max-w-[73%]">
+    {/* Carousel Container */}
+    {filteredAnswers?.length > 0 ? (
+      <div className="relative">
+        {/* Carousel */}
+        <div
+          ref={carouselRef}
+          className="carousel-container overflow-x-auto scrollbar-hide scroll-smooth flex md:gap-6 gap-4"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          {filteredAnswers?.map((answer, index) => (
+            <div
+              key={answer.id}
+              className="carousel-item flex-shrink-0 w-full md:w-[83%] lg:w-[80%] md:p-6 py-2 relative"
+              style={{
+                animationDelay: `${index * 0.1}s`,
+              }}
+            >
+              {/* Featured Badge */}
+              {answer.featured === "Yes" && (
+                <div className="mb-3">
+                  <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
+                    Featured
+                  </span>
                 </div>
+              )}
 
-                <div className="md:max-w-[73%]">
-                  {/* Carousel Container */}
-                  {filteredAnswers?.length > 0 ? (
-                    <div className="relative">
-                      {/* Carousel */}
-                      <div
-                        ref={carouselRef}
-                        className="overflow-x-auto scrollbar-hide scroll-smooth flex md:gap-6 gap-4"
-                        style={{
-                          scrollbarWidth: "none",
-                          msOverflowStyle: "none",
-                        }}
-                      >
-                        {filteredAnswers?.map((answer, index) => (
-                          <div
-                            key={answer.id}
-                            className="flex-shrink-0 w-full md:w-[83%] lg:w-[80%] md:p-6 py-2 relative"
-                          >
-                            {/* Featured Badge */}
-                            {answer.featured === "Yes" && (
-                              <div className="mb-3">
-                                <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
-                                  Featured
-                                </span>
-                              </div>
-                            )}
+              {/* Answer Text */}
+              <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed mb-2">
+                {answer?.answer.length > 300
+                  ? `${answer?.answer?.substring(0, 300)}...`
+                  : answer?.answer}
+              </p>
 
-                            {/* Answer Text */}
-                            <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed mb-2">
-                              {answer?.answer.length > 300
-                                ? `${answer?.answer?.substring(0, 300)}...`
-                                : answer?.answer}
-                            </p>
-
-                            {/* User Name */}
-                            <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844] mt-2">
-                              {answer?.userName
-                                ? answer?.userName
-                                    .split(" ")
-                                    .map((word: any, index: any, array: any) =>
-                                      index === 0
-                                        ? word
-                                        : index === 1 && array.length > 1
-                                        ? word.charAt(0) + "."
-                                        : ""
-                                    )
-                                    .join(" ")
-                                    .trim()
-                                : "Anonymous"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Navigation Dots */}
-                      <div className="flex justify-start md:ml-8 ml-2 gap-2 md:mt-4">
-                        {filteredAnswers.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentCarouselIndex(index)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                              index === currentCarouselIndex
-                                ? "bg-[#133844]"
-                                : "bg-transparent border border-[#133844] hover:bg-[#133844]/50"
-                            }`}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Gradient Overlay on Right */}
-                      <div className="hidden md:block absolute top-0 right-0 w-[112px] h-full pointer-events-none bg-gradient-to-l from-[#CFF9F0]/100 via-[#CFF9F000] to-transparent"></div>
-                    </div>
-                  ) : (
-                    <div className="text-center font-open-regular text-[13px] md:text-[16px] py-12 text-[#133844]/60">
-                      <p>No featured responses yet.</p>
-                      <p className="mt-2">
-                        Be the first to share your thoughts!
-                      </p>
-                    </div>
-                  )}
-                </div>
+              {/* User Name */}
+              <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844] mt-2">
+                {answer?.userName
+                  ? answer?.userName
+                      .split(" ")
+                      .map((word: any, index: any, array: any) =>
+                        index === 0
+                          ? word
+                          : index === 1 && array.length > 1
+                          ? word.charAt(0) + "."
+                          : ""
+                      )
+                      .join(" ")
+                      .trim()
+                  : "Anonymous"}
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Dots */}
+        <div className="flex justify-start md:ml-8 ml-2 gap-2 md:mt-4">
+          {filteredAnswers.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentCarouselIndex(index)}
+              className={`carousel-dot w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentCarouselIndex
+                  ? "bg-[#133844] active"
+                  : "bg-transparent border border-[#133844] hover:bg-[#133844]/50"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Gradient Overlay on Right - Updated */}
+        <div className="hidden md:block absolute top-0 right-0 w-[112px] h-full pointer-events-none carousel-gradient-overlay"></div>
+      </div>
+    ) : (
+      <div className="text-center font-open-regular text-[13px] md:text-[16px] py-12 text-[#133844]/60">
+        <p>No featured responses yet.</p>
+        <p className="mt-2">
+          Be the first to share your thoughts!
+        </p>
+      </div>
+    )}
+  </div>
+</div>
 
               {/* All Answers Modal */}
               {showAllAnswersModal && (
