@@ -37,14 +37,21 @@ export default function UnifiedSurvey() {
   // Carousel states
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [showAllAnswersModal, setShowAllAnswersModal] = useState(false);
+  const [showFullAnswerModal, setShowFullAnswerModal] = useState(false);
+  const [selectedFullAnswer, setSelectedFullAnswer] = useState<any>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Modal scrollbar refs
   const modalContainerRef = useRef<HTMLDivElement>(null);
   const modalThumbRef = useRef<HTMLDivElement>(null);
+  const fullAnswerModalContainerRef = useRef<HTMLDivElement>(null);
+  const fullAnswerModalThumbRef = useRef<HTMLDivElement>(null);
   const isModalDraggingRef = useRef(false);
   const modalDragStartYRef = useRef(0);
   const modalDragStartScrollTopRef = useRef(0);
+  const isFullAnswerModalDraggingRef = useRef(false);
+  const fullAnswerModalDragStartYRef = useRef(0);
+  const fullAnswerModalDragStartScrollTopRef = useRef(0);
 
   // Form validation states
   const [formErrors, setFormErrors] = useState({
@@ -61,11 +68,167 @@ export default function UnifiedSurvey() {
 
   const CHARACTER_LIMIT = 1000;
   const ANSWERS_PER_PAGE = 4;
+  const ANSWER_PREVIEW_LIMIT = 300;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const thumbRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentIndexRef = useRef(0);
   const isManualScrollRef = useRef(false);
+
+  // Full Answer Modal scrollbar effect
+  useEffect(() => {
+    if (!showFullAnswerModal) return;
+
+    const container = fullAnswerModalContainerRef.current;
+    const thumb = fullAnswerModalThumbRef.current;
+    if (!container || !thumb) return;
+
+    const MIN_THUMB_HEIGHT = 50;
+
+    const updateThumb = () => {
+      const clientH = container.clientHeight;
+      const scrollH = container.scrollHeight;
+      const scrollTop = container.scrollTop;
+
+      // Check if content is scrollable
+      const isScrollable = scrollH > clientH;
+
+      // Resolve track element (cast to HTMLElement so .style exists)
+      const track = container.parentElement
+        ? (container.parentElement.querySelector(
+            ".scrollbar-track"
+          ) as HTMLElement | null)
+        : null;
+
+      // Update thumb visibility
+      if (isScrollable) {
+        let thumbH = Math.max(MIN_THUMB_HEIGHT, (clientH / scrollH) * clientH);
+        thumbH = Math.min(clientH, thumbH);
+        thumb.style.height = `${thumbH}px`;
+
+        const maxScroll = Math.max(0, scrollH - clientH);
+        const maxThumbTop = Math.max(0, clientH - thumbH);
+        const thumbTop =
+          maxScroll === 0 ? 0 : (scrollTop / maxScroll) * maxThumbTop;
+        thumb.style.transform = `translateY(${thumbTop}px)`;
+        thumb.style.display = "block"; // Show thumb
+        if (track) {
+          track.style.display = "block"; // Show track
+        }
+      } else {
+        thumb.style.display = "none"; // Hide thumb
+        if (track) {
+          track.style.display = "none"; // Hide track
+        }
+      }
+    };
+
+    const handleThumbMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      isFullAnswerModalDraggingRef.current = true;
+      fullAnswerModalDragStartYRef.current = e.clientY;
+      fullAnswerModalDragStartScrollTopRef.current = container.scrollTop;
+
+      document.addEventListener("mousemove", handleThumbMouseMove);
+      document.addEventListener("mouseup", handleThumbMouseUp);
+
+      document.body.style.cursor = "grabbing";
+      thumb.style.cursor = "grabbing";
+    };
+
+    const handleThumbTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      isFullAnswerModalDraggingRef.current = true;
+      fullAnswerModalDragStartYRef.current = e.touches[0].clientY;
+      fullAnswerModalDragStartScrollTopRef.current = container.scrollTop;
+
+      document.addEventListener("touchmove", handleThumbTouchMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleThumbTouchEnd);
+    };
+
+    const handleThumbMouseMove = (e: MouseEvent) => {
+      if (!isFullAnswerModalDraggingRef.current) return;
+
+      const deltaY = e.clientY - fullAnswerModalDragStartYRef.current;
+      const scrollRatio = container.scrollHeight / container.clientHeight;
+      const newScrollTop =
+        fullAnswerModalDragStartScrollTopRef.current + deltaY * scrollRatio;
+
+      container.scrollTop = Math.max(
+        0,
+        Math.min(newScrollTop, container.scrollHeight - container.clientHeight)
+      );
+    };
+
+    const handleThumbTouchMove = (e: TouchEvent) => {
+      if (!isFullAnswerModalDraggingRef.current) return;
+
+      e.preventDefault();
+
+      const deltaY =
+        e.touches[0].clientY - fullAnswerModalDragStartYRef.current;
+      const scrollRatio = container.scrollHeight / container.clientHeight;
+      const newScrollTop =
+        fullAnswerModalDragStartScrollTopRef.current + deltaY * scrollRatio;
+
+      container.scrollTop = Math.max(
+        0,
+        Math.min(newScrollTop, container.scrollHeight - container.clientHeight)
+      );
+    };
+
+    const handleThumbMouseUp = () => {
+      isFullAnswerModalDraggingRef.current = false;
+
+      document.removeEventListener("mousemove", handleThumbMouseMove);
+      document.removeEventListener("mouseup", handleThumbMouseUp);
+
+      document.body.style.cursor = "";
+      thumb.style.cursor = "grab";
+    };
+
+    const handleThumbTouchEnd = () => {
+      isFullAnswerModalDraggingRef.current = false;
+
+      document.removeEventListener("touchmove", handleThumbTouchMove);
+      document.removeEventListener("touchend", handleThumbTouchEnd);
+    };
+
+    // Initialize thumb
+    updateThumb();
+
+    // Add event listeners
+    thumb.addEventListener("mousedown", handleThumbMouseDown);
+    thumb.addEventListener("touchstart", handleThumbTouchStart, {
+      passive: false,
+    });
+
+    container.addEventListener("scroll", updateThumb, { passive: true });
+    window.addEventListener("resize", updateThumb);
+
+    const ro = new MutationObserver(updateThumb);
+    ro.observe(container, { childList: true, subtree: true });
+
+    return () => {
+      thumb.removeEventListener("mousedown", handleThumbMouseDown);
+      thumb.removeEventListener("touchstart", handleThumbTouchStart);
+
+      document.removeEventListener("mousemove", handleThumbMouseMove);
+      document.removeEventListener("mouseup", handleThumbMouseUp);
+      document.removeEventListener("touchmove", handleThumbTouchMove);
+      document.removeEventListener("touchend", handleThumbTouchEnd);
+
+      container.removeEventListener("scroll", updateThumb);
+      window.removeEventListener("resize", updateThumb);
+      ro.disconnect();
+    };
+  }, [showFullAnswerModal]);
 
   // Modal scrollbar effect
   useEffect(() => {
@@ -747,6 +910,16 @@ export default function UnifiedSurvey() {
     setFormErrors({ name: "", email: "", gdprConsent: "", publicConsent: "" });
   };
 
+  const handleShowFullAnswer = (answer: any) => {
+    setSelectedFullAnswer(answer);
+    setShowFullAnswerModal(true);
+  };
+
+  const handleCloseFullAnswerModal = () => {
+    setShowFullAnswerModal(false);
+    setSelectedFullAnswer(null);
+  };
+
   const handleScroll = () => {
     if (
       !scrollRef.current ||
@@ -1348,126 +1521,138 @@ export default function UnifiedSurvey() {
               )}
 
               {/* Featured Answers Carousel Section */}
-              {/* Featured Answers Carousel Section */}
-<div className="mb-12 mt-12 md:flex">
-  <div className="md:min-w-80">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-[14px] md:text-[20px] font-open-bold text-[#133844]">
-        Featured answers:
-      </h3>
-    </div>
+              <div className="mb-12 mt-12 md:flex">
+                <div className="md:min-w-80">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[14px] md:text-[20px] font-open-bold text-[#133844]">
+                      Featured answers:
+                    </h3>
+                  </div>
 
-    {/* Filter Badges */}
-    <div className="flex gap-3 mb-6 flex-wrap">
-      {questions.map((question, index) => (
-        <button
-          key={question.id}
-          onClick={() => handleQuestionFilter(question.id)}
-          className={`px-4 py-2 rounded-full text-[12px] md:text-[14px] font-open-regular cursor-pointer transition-all duration-300 ${
-            selectedQuestion === question.id
-              ? "bg-[#133844] text-white shadow-lg"
-              : "bg-[#00BDB6] text-white hover:bg-[#00a89e]"
-          }`}
-        >
-          Prompt {index + 1}
-        </button>
-      ))}
-    </div>
+                  {/* Filter Badges */}
+                  <div className="flex gap-3 mb-6 flex-wrap">
+                    {questions.map((question, index) => (
+                      <button
+                        key={question.id}
+                        onClick={() => handleQuestionFilter(question.id)}
+                        className={`px-4 py-2 rounded-full text-[12px] md:text-[14px] font-open-regular cursor-pointer transition-all duration-300 ${
+                          selectedQuestion === question.id
+                            ? "bg-[#133844] text-white shadow-lg"
+                            : "bg-[#00BDB6] text-white hover:bg-[#00a89e]"
+                        }`}
+                      >
+                        Prompt {index + 1}
+                      </button>
+                    ))}
+                  </div>
 
-    {/* See All Answers Link */}
-    <button
-      onClick={() => setShowAllAnswersModal(true)}
-      className="text-[#133844] text-[13px] md:text-[16px] font-open-regular underline mb-6 hover:text-[#00BDB6] transition-colors cursor-pointer"
-    >
-      See all answers
-    </button>
-  </div>
-
-  <div className="md:max-w-[73%]">
-    {/* Carousel Container */}
-    {filteredAnswers?.length > 0 ? (
-      <div className="relative">
-        {/* Carousel */}
-        <div
-          ref={carouselRef}
-          className="carousel-container overflow-x-auto scrollbar-hide scroll-smooth flex md:gap-6 gap-4"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-          }}
-        >
-          {filteredAnswers?.map((answer, index) => (
-            <div
-              key={answer.id}
-              className="carousel-item flex-shrink-0 w-full md:w-[83%] lg:w-[80%] md:p-6 py-2 relative"
-              style={{
-                animationDelay: `${index * 0.1}s`,
-              }}
-            >
-              {/* Featured Badge */}
-              {answer.featured === "Yes" && (
-                <div className="mb-3">
-                  <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
-                    Featured
-                  </span>
+                  {/* See All Answers Link */}
+                  <button
+                    onClick={() => setShowAllAnswersModal(true)}
+                    className="text-[#133844] text-[13px] md:text-[16px] font-open-regular underline mb-6 hover:text-[#00BDB6] transition-colors cursor-pointer"
+                  >
+                    See all answers
+                  </button>
                 </div>
-              )}
 
-              {/* Answer Text */}
-              <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed mb-2">
-                {answer?.answer.length > 300
-                  ? `${answer?.answer?.substring(0, 300)}...`
-                  : answer?.answer}
-              </p>
+                <div className="md:max-w-[73%]">
+                  {/* Carousel Container */}
+                  {filteredAnswers?.length > 0 ? (
+                    <div className="relative">
+                      {/* Carousel */}
+                      <div
+                        ref={carouselRef}
+                        className="carousel-container overflow-x-auto scrollbar-hide scroll-smooth flex md:gap-6 gap-4"
+                        style={{
+                          scrollbarWidth: "none",
+                          msOverflowStyle: "none",
+                        }}
+                      >
+                        {filteredAnswers?.map((answer, index) => (
+                          <div
+                            key={answer.id}
+                            className="carousel-item flex-shrink-0 w-full md:w-[83%] lg:w-[80%] md:p-6 py-2 relative"
+                            style={{
+                              animationDelay: `${index * 0.1}s`,
+                            }}
+                          >
+                            {/* Featured Badge */}
+                            {answer.featured === "Yes" && (
+                              <div className="mb-3">
+                                <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
+                                  Featured
+                                </span>
+                              </div>
+                            )}
 
-              {/* User Name */}
-              <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844] mt-2">
-                {answer?.userName
-                  ? answer?.userName
-                      .split(" ")
-                      .map((word: any, index: any, array: any) =>
-                        index === 0
-                          ? word
-                          : index === 1 && array.length > 1
-                          ? word.charAt(0) + "."
-                          : ""
-                      )
-                      .join(" ")
-                      .trim()
-                  : "Anonymous"}
+                            {/* Answer Text */}
+                            <div className="mb-2">
+                              <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed">
+                                {answer?.answer.length > ANSWER_PREVIEW_LIMIT
+                                  ? `${answer?.answer?.substring(
+                                      0,
+                                      ANSWER_PREVIEW_LIMIT
+                                    )}...`
+                                  : answer?.answer}
+                              </p>
+                              {answer?.answer.length > ANSWER_PREVIEW_LIMIT && (
+                                <button
+                                  onClick={() => handleShowFullAnswer(answer)}
+                                  className="text-[#00BDB6] text-[12px] md:text-[14px] font-open-regular underline mt-2 hover:text-[#00a89e] transition-colors cursor-pointer"
+                                >
+                                  See more
+                                </button>
+                              )}
+                            </div>
+
+                            {/* User Name */}
+                            <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844] mt-2">
+                              {answer?.userName
+                                ? answer?.userName
+                                    .split(" ")
+                                    .map((word: any, index: any, array: any) =>
+                                      index === 0
+                                        ? word
+                                        : index === 1 && array.length > 1
+                                        ? word.charAt(0) + "."
+                                        : ""
+                                    )
+                                    .join(" ")
+                                    .trim()
+                                : "Anonymous"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Navigation Dots */}
+                      <div className="flex justify-start md:ml-8 ml-2 gap-2 md:mt-4">
+                        {filteredAnswers.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentCarouselIndex(index)}
+                            className={`carousel-dot w-2 h-2 rounded-full transition-all duration-300 ${
+                              index === currentCarouselIndex
+                                ? "bg-[#133844] active"
+                                : "bg-transparent border border-[#133844] hover:bg-[#133844]/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Gradient Overlay on Right - Updated */}
+                      <div className="hidden md:block absolute top-0 right-0 w-[112px] h-full pointer-events-none carousel-gradient-overlay"></div>
+                    </div>
+                  ) : (
+                    <div className="text-center font-open-regular text-[13px] md:text-[16px] py-12 text-[#133844]/60">
+                      <p>No featured responses yet.</p>
+                      <p className="mt-2">
+                        Be the first to share your thoughts!
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Navigation Dots */}
-        <div className="flex justify-start md:ml-8 ml-2 gap-2 md:mt-4">
-          {filteredAnswers.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentCarouselIndex(index)}
-              className={`carousel-dot w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentCarouselIndex
-                  ? "bg-[#133844] active"
-                  : "bg-transparent border border-[#133844] hover:bg-[#133844]/50"
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Gradient Overlay on Right - Updated */}
-        <div className="hidden md:block absolute top-0 right-0 w-[112px] h-full pointer-events-none carousel-gradient-overlay"></div>
-      </div>
-    ) : (
-      <div className="text-center font-open-regular text-[13px] md:text-[16px] py-12 text-[#133844]/60">
-        <p>No featured responses yet.</p>
-        <p className="mt-2">
-          Be the first to share your thoughts!
-        </p>
-      </div>
-    )}
-  </div>
-</div>
 
               {/* All Answers Modal */}
               {showAllAnswersModal && (
@@ -1515,7 +1700,6 @@ export default function UnifiedSurvey() {
                       ))}
                     </div>
 
-                    {/* Scrollable Content with Custom Scrollbar - UPDATED ALIGNMENT */}
                     {/* Scrollable Content with Custom Scrollbar */}
                     <div className="relative overflow-hidden">
                       <div
@@ -1536,7 +1720,7 @@ export default function UnifiedSurvey() {
                                 key={answer.id}
                                 className="py-2 pl-2 border-b mr-8 last:border-b-0 border-[#133844]/30"
                               >
-                                {/* Featured Badge - Only show for actual featured items (first 5 featured) */}
+                                {/* Featured Badge */}
                                 {answer.featured === "Yes" && (
                                   <div className="mb-3">
                                     <span className="inline-block bg-[#00BDB6] text-white text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
@@ -1546,9 +1730,11 @@ export default function UnifiedSurvey() {
                                 )}
 
                                 {/* Answer Text */}
-                                <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed mb-4">
-                                  {answer.answer}
-                                </p>
+                                <div className="mb-4">
+                                  <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed">
+                                    {answer.answer}
+                                  </p>
+                                </div>
 
                                 {/* User Name */}
                                 <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844]">
@@ -1580,8 +1766,89 @@ export default function UnifiedSurvey() {
                         )}
                       </div>
 
-                      {/* Custom Thumb - USING SAME CLASS */}
+                      {/* Custom Thumb */}
                       <div ref={modalThumbRef} className="custom-thumb" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Full Answer Modal */}
+              {showFullAnswerModal && selectedFullAnswer && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                  {/* Backdrop */}
+                  <div
+                    className="absolute bg-[#133844]/20 backdrop-blur-sm"
+                    onClick={handleCloseFullAnswerModal}
+                  />
+
+                  {/* Modal */}
+                  <div className="relative w-full z-50 max-w-6xl max-h-[70vh] bg-white/50 backdrop-blur-[20px] rounded-2xl border border-white/90 shadow-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className="sticky top-0 py-4 px-2 pb-0 flex items-center justify-between z-50">
+                      <h2 className="text-[16px] md:text-[24px] font-open-bold text-[#133844]">
+                        {/* Full Answer */}
+                      </h2>
+                      <button
+                        onClick={handleCloseFullAnswerModal}
+                        className="text-[#00BDB6] hover:text-[#00a89e] transition-colors cursor-pointer"
+                      >
+                        <X className="w-8 h-8" />
+                      </button>
+                    </div>
+
+                    {/* Scrollable Content with Custom Scrollbar */}
+                    <div className="relative overflow-hidden">
+                      <div
+                        ref={fullAnswerModalContainerRef}
+                        className="overflow-y-auto hide-native-scrollbar max-h-[calc(80vh-100px)] p-6 z-50"
+                        style={{
+                          scrollbarWidth: "none",
+                          msOverflowStyle: "none",
+                        }}
+                      >
+                        {/* Custom scrollbar track */}
+                        <div className="scrollbar-track absolute top-0 right-5 h-full rounded w-[5px] bg-[#B9EFE3] -z-3" />
+
+                        {/* Featured Badge */}
+                        {selectedFullAnswer.featured === "Yes" && (
+                          <div className="mb-4">
+                            <span className="inline-block bg-[#00BDB6] text-white text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
+                              Featured
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Answer Text */}
+                        <div className="mb-6">
+                          <p className="text-[#133844] font-open-regular text-[14px] md:text-[16px] leading-relaxed whitespace-pre-wrap">
+                            {selectedFullAnswer.answer}
+                          </p>
+                        </div>
+
+                        {/* User Name */}
+                        <div className="font-open-bold text-[12px] md:text-[14px] text-[#133844] border-t border-[#133844]/20 pt-4">
+                          {selectedFullAnswer.userName
+                            ? selectedFullAnswer.userName
+                                .split(" ")
+                                .map((word: any, index: any, array: any) =>
+                                  index === 0
+                                    ? word
+                                    : index === 1 && array.length > 1
+                                    ? word.charAt(0) + "."
+                                    : ""
+                                )
+                                .join(" ")
+                                .trim()
+                            : "Anonymous"}
+                        </div>
+                      </div>
+
+                      {/* Custom Thumb */}
+                      <div
+                        ref={fullAnswerModalThumbRef}
+                        className="custom-thumb"
+                      />
                     </div>
                   </div>
                 </div>
