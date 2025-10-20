@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { X } from "lucide-react";
 import { Question, UserInfo, airtableService } from "../services/airtable";
 
@@ -40,6 +40,8 @@ export default function UnifiedSurvey() {
   const [showFullAnswerModal, setShowFullAnswerModal] = useState(false);
   const [selectedFullAnswer, setSelectedFullAnswer] = useState<any>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const isCarouselAutoScrolling = useRef(false);
+  const carouselScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Modal scrollbar refs
   const modalContainerRef = useRef<HTMLDivElement>(null);
@@ -357,7 +359,7 @@ export default function UnifiedSurvey() {
       document.removeEventListener("touchend", handleThumbTouchEnd);
 
       container.removeEventListener("scroll", updateThumb);
-      window.removeEventListener("resize", updateThumb);
+      window.addEventListener("resize", updateThumb);
       ro.disconnect();
     };
   }, [filteredAnswers, showAllAnswersModal]);
@@ -513,32 +515,107 @@ export default function UnifiedSurvey() {
     setCurrentCarouselIndex(0);
   }, [selectedQuestion, approvedAnswers]);
 
-  // Auto-scroll carousel every 5 seconds
-  // useEffect(() => {
-  //   if (filteredAnswers.length <= 1) return;
-
-  //   const timer = setInterval(() => {
-  //     setCurrentCarouselIndex((prev) =>
-  //       prev === filteredAnswers.length - 1 ? 0 : prev + 1
-  //     );
-  //   }, 5000);
-
-  //   return () => clearInterval(timer);
-  // }, [filteredAnswers.length]);
-
-  // Scroll carousel on index change
+  // Fixed carousel auto-scroll
   useEffect(() => {
+    if (filteredAnswers.length <= 1) return;
+
+    const timer = setInterval(() => {
+      if (!isCarouselAutoScrolling.current) {
+        setCurrentCarouselIndex((prev) =>
+          prev === filteredAnswers.length - 1 ? 0 : prev + 1
+        );
+      }
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [filteredAnswers.length]);
+
+  // Fixed carousel scroll effect
+  useLayoutEffect(() => {
     if (carouselRef.current && filteredAnswers.length > 0) {
-      const scrollWidth =
-        carouselRef.current.scrollWidth / filteredAnswers.length;
-      carouselRef.current.scrollTo({
-        left: scrollWidth * currentCarouselIndex,
-        behavior: "smooth",
-      });
+      const container = carouselRef.current;
+      const target = container.children[currentCarouselIndex] as HTMLElement;
+      
+      if (target) {
+        isCarouselAutoScrolling.current = true;
+        
+        container.scrollTo({
+          left: target.offsetLeft,
+          behavior: "smooth",
+        });
+
+        // Clear any existing timeout
+        if (carouselScrollTimeout.current) {
+          clearTimeout(carouselScrollTimeout.current);
+        }
+
+        // Reset the flag after scroll completes
+        carouselScrollTimeout.current = setTimeout(() => {
+          isCarouselAutoScrolling.current = false;
+        }, 500);
+      }
     }
   }, [currentCarouselIndex, filteredAnswers.length]);
 
-  // Your existing functions (loadQuestions, loadApprovedAnswers, handleAnswerChange, validateUserInfo, etc.) remain exactly the same...
+  // Fixed carousel scroll handler
+  useEffect(() => {
+    const container = carouselRef.current;
+    if (!container || filteredAnswers.length === 0) return;
+
+    const handleScroll = () => {
+      // Only update if not auto-scrolling and not manually scrolling via timeout
+      if (isCarouselAutoScrolling.current) return;
+
+      const scrollLeft = container.scrollLeft;
+      const containerWidth = container.clientWidth;
+      
+      // Calculate current index based on scroll position
+      const newIndex = Math.round(scrollLeft / containerWidth);
+      
+      if (newIndex >= 0 && newIndex < filteredAnswers.length && newIndex !== currentCarouselIndex) {
+        setCurrentCarouselIndex(newIndex);
+      }
+    };
+
+    // Use requestAnimationFrame for smoother scroll handling
+    let rafId: number;
+    const throttledScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(handleScroll);
+    };
+
+    container.addEventListener("scroll", throttledScroll, { passive: true });
+    
+    return () => {
+      container.removeEventListener("scroll", throttledScroll);
+      cancelAnimationFrame(rafId);
+      if (carouselScrollTimeout.current) {
+        clearTimeout(carouselScrollTimeout.current);
+      }
+    };
+  }, [filteredAnswers.length, currentCarouselIndex]);
+
+  // Fixed carousel dot click handler
+  const handleCarouselDotClick = (index: number) => {
+    console.log("Carousel dot clicked:", index);
+    
+    // Set manual scrolling flag
+    isCarouselAutoScrolling.current = true;
+    
+    // Update the index
+    setCurrentCarouselIndex(index);
+    
+    // Clear any existing timeout
+    if (carouselScrollTimeout.current) {
+      clearTimeout(carouselScrollTimeout.current);
+    }
+    
+    // Reset the flag after a delay
+    carouselScrollTimeout.current = setTimeout(() => {
+      isCarouselAutoScrolling.current = false;
+    }, 1000);
+  };
+
   const loadQuestions = async () => {
     setLoading(true);
     const data = await airtableService.getQuestions();
@@ -799,27 +876,16 @@ export default function UnifiedSurvey() {
 
         setTimeout(() => {
           if (scrollRef.current) {
-            const cardWidth = scrollRef.current.clientWidth * 0.85;
-            const gap = 16;
-            const totalCardWidth = cardWidth + gap;
-            const targetScroll = nextIndex * totalCardWidth;
-
-            console.log(
-              `🎯 Scrolling to index ${nextIndex}, position ${targetScroll}`
-            );
-
-            isManualScrollRef.current = true;
-            scrollRef.current.scrollTo({
-              left: targetScroll,
-              behavior: "smooth",
-            });
-
-            setTimeout(() => {
-              isManualScrollRef.current = false;
-              isNavigatingRef.current = false;
-              console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
-            }, 500);
+            const target = scrollRef.current.children[nextIndex] as HTMLElement;
+            if (target) {
+              scrollRef.current.scrollTo({
+                left: target.offsetLeft,
+                behavior: "smooth",
+              });
+            }
           }
+          isNavigatingRef.current = false;
+          console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
         }, 50);
       } else {
         isNavigatingRef.current = false;
@@ -851,27 +917,16 @@ export default function UnifiedSurvey() {
 
     setTimeout(() => {
       if (scrollRef.current) {
-        const cardWidth = scrollRef.current.clientWidth * 0.85;
-        const gap = 16;
-        const totalCardWidth = cardWidth + gap;
-        const targetScroll = nextIndex * totalCardWidth;
-
-        console.log(
-          `🎯 Scrolling to index ${nextIndex}, position ${targetScroll}`
-        );
-
-        isManualScrollRef.current = true;
-        scrollRef.current.scrollTo({
-          left: targetScroll,
-          behavior: "smooth",
-        });
-
-        setTimeout(() => {
-          isManualScrollRef.current = false;
-          isNavigatingRef.current = false;
-          console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
-        }, 500);
+        const target = scrollRef.current.children[nextIndex] as HTMLElement;
+        if (target) {
+          scrollRef.current.scrollTo({
+            left: target.offsetLeft,
+            behavior: "smooth",
+          });
+        }
       }
+      isNavigatingRef.current = false;
+      console.log(`✅ NAVIGATION COMPLETE: Now at index ${nextIndex}`);
     }, 50);
   };
 
@@ -884,23 +939,6 @@ export default function UnifiedSurvey() {
         console.log(`Filter: Navigating to prompt ${questionIndex + 1}`);
         setCurrentIndex(questionIndex);
         currentIndexRef.current = questionIndex;
-
-        if (scrollRef.current) {
-          const cardWidth = scrollRef.current.clientWidth * 0.85;
-          const gap = 16;
-          const totalCardWidth = cardWidth + gap;
-          const targetScroll = questionIndex * totalCardWidth;
-
-          isManualScrollRef.current = true;
-          scrollRef.current.scrollTo({
-            left: targetScroll,
-            behavior: "smooth",
-          });
-
-          setTimeout(() => {
-            isManualScrollRef.current = false;
-          }, 500);
-        }
       }
     }
   };
@@ -930,22 +968,26 @@ export default function UnifiedSurvey() {
     )
       return;
 
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = scrollRef.current.clientWidth * 0.85;
-    const gap = 16;
-    const totalCardWidth = cardWidth + gap;
-
-    const newIndex = Math.round(scrollLeft / totalCardWidth);
-
+    const container = scrollRef.current;
+    const scrollLeft = container.scrollLeft;
+    let closestIndex = 0;
+    let minDiff = Infinity;
+    Array.from(container.children).forEach((child, index) => {
+      const diff = Math.abs((child as HTMLElement).offsetLeft - scrollLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = index;
+      }
+    });
     if (
-      newIndex !== currentIndex &&
-      newIndex >= 0 &&
-      newIndex < questions.length
+      closestIndex !== currentIndex &&
+      closestIndex >= 0 &&
+      closestIndex < questions.length
     ) {
       console.log(
-        `Scroll: Updating current index from ${currentIndex} to ${newIndex}`
+        `Scroll: Updating current index from ${currentIndex} to ${closestIndex}`
       );
-      setCurrentIndex(newIndex);
+      setCurrentIndex(closestIndex);
     }
   };
 
@@ -957,7 +999,7 @@ export default function UnifiedSurvey() {
     }
   }, [questions.length, currentIndex, showUserForm, showThankYou]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     console.log(
       `Scroll effect triggered: currentIndex=${currentIndex}, showUserForm=${showUserForm}, showThankYou=${showThankYou}, preventScrollUpdate=${preventScrollUpdate}`
     );
@@ -969,28 +1011,28 @@ export default function UnifiedSurvey() {
       !isManualScrollRef.current &&
       !preventScrollUpdate
     ) {
-      const cardWidth = scrollRef.current.clientWidth * 0.85;
-      const gap = 16;
-      const totalCardWidth = cardWidth + gap;
-      const targetScroll = currentIndex * totalCardWidth;
+      const target = scrollRef.current.children[currentIndex] as HTMLElement;
+      if (target) {
+        const targetScroll = target.offsetLeft;
+        const currentScroll = scrollRef.current.scrollLeft;
+        const scrollDifference = Math.abs(currentScroll - targetScroll);
+        const approximateCardWidth = scrollRef.current.clientWidth * 0.85;
 
-      const currentScroll = scrollRef.current.scrollLeft;
-      const scrollDifference = Math.abs(currentScroll - targetScroll);
+        if (scrollDifference > approximateCardWidth * 0.1) {
+          console.log(
+            `Scrolling to index ${currentIndex}, position ${targetScroll}`
+          );
 
-      if (scrollDifference > totalCardWidth * 0.1) {
-        console.log(
-          `Scrolling to index ${currentIndex}, position ${targetScroll}`
-        );
+          isManualScrollRef.current = true;
+          scrollRef.current.scrollTo({
+            left: targetScroll,
+            behavior: "smooth",
+          });
 
-        isManualScrollRef.current = true;
-        scrollRef.current.scrollTo({
-          left: targetScroll,
-          behavior: "smooth",
-        });
-
-        setTimeout(() => {
-          isManualScrollRef.current = false;
-        }, 500);
+          setTimeout(() => {
+            isManualScrollRef.current = false;
+          }, 500);
+        }
       }
     }
   }, [currentIndex, showUserForm, showThankYou, preventScrollUpdate]);
@@ -998,71 +1040,12 @@ export default function UnifiedSurvey() {
   const handleDotClick = (index: number) => {
     console.log(`Dot clicked: Navigating to index ${index}`);
     setCurrentIndex(index);
-
-    if (scrollRef.current) {
-      const cardWidth = scrollRef.current.clientWidth * 0.85;
-      const gap = 16;
-      const totalCardWidth = cardWidth + gap;
-      const targetScroll = index * totalCardWidth;
-
-      isManualScrollRef.current = true;
-      scrollRef.current.scrollTo({
-        left: targetScroll,
-        behavior: "smooth",
-      });
-
-      setTimeout(() => {
-        isManualScrollRef.current = false;
-      }, 500);
-    }
   };
 
   const handleScrollClick = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-
-    const container = scrollRef.current;
-    const cardWidth = container.clientWidth * 0.85;
-    const gap = 16;
-    const totalCardWidth = cardWidth + gap;
-
-    let newScrollLeft;
-
-    if (direction === "left") {
-      newScrollLeft = container.scrollLeft - totalCardWidth;
-    } else {
-      newScrollLeft = container.scrollLeft + totalCardWidth;
-    }
-
-    const maxScrollLeft = container.scrollWidth - container.clientWidth;
-
-    let boundedScrollLeft;
-    if (direction === "left" && newScrollLeft < 0) {
-      boundedScrollLeft = 0;
-    } else if (direction === "right" && newScrollLeft > maxScrollLeft) {
-      boundedScrollLeft = maxScrollLeft;
-    } else {
-      boundedScrollLeft = newScrollLeft;
-    }
-
-    isManualScrollRef.current = true;
-
-    container.scrollTo({
-      left: boundedScrollLeft,
-      behavior: "smooth",
-    });
-
-    const newIndex = Math.round(boundedScrollLeft / totalCardWidth);
-    if (
-      newIndex !== currentIndex &&
-      newIndex >= 0 &&
-      newIndex < questions.length
-    ) {
-      setCurrentIndex(newIndex);
-    }
-
-    setTimeout(() => {
-      isManualScrollRef.current = false;
-    }, 500);
+    const newIndex = direction === "left" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= questions.length) return;
+    setCurrentIndex(newIndex);
   };
 
   const isPrevDisabled = currentIndex === 0;
@@ -1587,7 +1570,7 @@ export default function UnifiedSurvey() {
 
                             {/* Answer Text */}
                             <div className="mb-2">
-                              <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed">
+                              <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed pr-4 break-words">
                                 {answer?.answer.length > ANSWER_PREVIEW_LIMIT
                                   ? `${answer?.answer?.substring(
                                       0,
@@ -1626,14 +1609,14 @@ export default function UnifiedSurvey() {
                       </div>
 
                       {/* Navigation Dots */}
-                      <div className="flex justify-start md:ml-8 ml-2 gap-2 md:mt-4">
-                        {filteredAnswers.map((_, index) => (
+                      <div className="flex justify-start md:ml-8  gap-2 md:mt-4">
+                        {filteredAnswers?.map((_, index) => (
                           <button
                             key={index}
-                            onClick={() => setCurrentCarouselIndex(index)}
+                            onClick={() => handleCarouselDotClick(index)}
                             className={`carousel-dot w-2 h-2 rounded-full transition-all duration-300 ${
                               index === currentCarouselIndex
-                                ? "bg-[#133844] active"
+                                ? "bg-[#133844]"
                                 : "bg-transparent border border-[#133844] hover:bg-[#133844]/50"
                             }`}
                           />
@@ -1731,7 +1714,7 @@ export default function UnifiedSurvey() {
 
                                 {/* Answer Text */}
                                 <div className="mb-4">
-                                  <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed">
+                                  <p className="text-[#133844] font-open-regular text-[13px] md:text-[16px] leading-relaxed break-words">
                                     {answer.answer}
                                   </p>
                                 </div>
@@ -1821,7 +1804,7 @@ export default function UnifiedSurvey() {
 
                         {/* Answer Text */}
                         <div className="mb-6">
-                          <p className="text-[#133844] font-open-regular text-[14px] md:text-[16px] leading-relaxed whitespace-pre-wrap">
+                          <p className="text-[#133844] font-open-regular text-[14px] md:text-[16px] leading-relaxed whitespace-pre-wrap break-words">
                             {selectedFullAnswer.answer}
                           </p>
                         </div>

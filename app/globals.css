@@ -253,6 +253,9 @@ body {
 .carousel-container {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+  scroll-behavior: smooth;
 }
 
 /* Gradient overlay adjustment for last item */
@@ -264,26 +267,11 @@ body {
   );
 }
 
-/* Active dot state with animation */
-.carousel-dot.active {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
-
 /* Ensure proper alignment for all carousel items */
 .carousel-item {
   flex: 0 0 auto;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 /* Container alignment fix */
