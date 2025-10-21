@@ -23,6 +23,7 @@ export default function UnifiedSurvey() {
   const [submitted, setSubmitted] = useState(false);
   const [approvedAnswers, setApprovedAnswers] = useState<any[]>([]);
   const [filteredAnswers, setFilteredAnswers] = useState<any[]>([]);
+  const [featuredAnswers, setFeaturedAnswers] = useState<any[]>([]);
   const [refreshingAnswers, setRefreshingAnswers] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [currentAnswerPage, setCurrentAnswerPage] = useState(0);
@@ -508,31 +509,39 @@ export default function UnifiedSurvey() {
         (answer) => answer.questionId === selectedQuestion
       );
       setFilteredAnswers(filtered);
+      
+      // Filter featured answers for carousel
+      const featured = filtered.filter(answer => answer.featured === "Yes");
+      setFeaturedAnswers(featured);
     } else {
       setFilteredAnswers(approvedAnswers);
+      
+      // Filter featured answers for carousel from all approved answers
+      const featured = approvedAnswers.filter(answer => answer.featured === "Yes");
+      setFeaturedAnswers(featured);
     }
     setCurrentAnswerPage(0);
     setCurrentCarouselIndex(0);
   }, [selectedQuestion, approvedAnswers]);
 
-  // Fixed carousel auto-scroll
+  // Fixed carousel auto-scroll - using featuredAnswers now
   useEffect(() => {
-    if (filteredAnswers.length <= 1) return;
+    if (featuredAnswers.length <= 1) return;
 
     const timer = setInterval(() => {
       if (!isCarouselAutoScrolling.current) {
         setCurrentCarouselIndex((prev) =>
-          prev === filteredAnswers.length - 1 ? 0 : prev + 1
+          prev === featuredAnswers.length - 1 ? 0 : prev + 1
         );
       }
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [filteredAnswers.length]);
+  }, [featuredAnswers.length]);
 
-  // Fixed carousel scroll effect
+  // Fixed carousel scroll effect - using featuredAnswers now
   useLayoutEffect(() => {
-    if (carouselRef.current && filteredAnswers.length > 0) {
+    if (carouselRef.current && featuredAnswers.length > 0) {
       const container = carouselRef.current;
       const target = container.children[currentCarouselIndex] as HTMLElement;
       
@@ -555,12 +564,12 @@ export default function UnifiedSurvey() {
         }, 500);
       }
     }
-  }, [currentCarouselIndex, filteredAnswers.length]);
+  }, [currentCarouselIndex, featuredAnswers.length]);
 
-  // Fixed carousel scroll handler
+  // Fixed carousel scroll handler - using featuredAnswers now
   useEffect(() => {
     const container = carouselRef.current;
-    if (!container || filteredAnswers.length === 0) return;
+    if (!container || featuredAnswers.length === 0) return;
 
     const handleScroll = () => {
       // Only update if not auto-scrolling and not manually scrolling via timeout
@@ -572,7 +581,7 @@ export default function UnifiedSurvey() {
       // Calculate current index based on scroll position
       const newIndex = Math.round(scrollLeft / containerWidth);
       
-      if (newIndex >= 0 && newIndex < filteredAnswers.length && newIndex !== currentCarouselIndex) {
+      if (newIndex >= 0 && newIndex < featuredAnswers.length && newIndex !== currentCarouselIndex) {
         setCurrentCarouselIndex(newIndex);
       }
     };
@@ -593,9 +602,9 @@ export default function UnifiedSurvey() {
         clearTimeout(carouselScrollTimeout.current);
       }
     };
-  }, [filteredAnswers.length, currentCarouselIndex]);
+  }, [featuredAnswers.length, currentCarouselIndex]);
 
-  // Fixed carousel dot click handler
+  // Fixed carousel dot click handler - using featuredAnswers now
   const handleCarouselDotClick = (index: number) => {
     console.log("Carousel dot clicked:", index);
     
@@ -635,10 +644,13 @@ export default function UnifiedSurvey() {
         (answer) => answer.status === "Approved"
       );
 
+      // Sort: Featured first, then by date (newest first)
       const sorted = approvedAnswersData.sort((a, b) => {
+        // Featured answers first
         if (a.featured === "Yes" && b.featured !== "Yes") return -1;
         if (a.featured !== "Yes" && b.featured === "Yes") return 1;
-
+        
+        // Then by submission date (newest first)
         return (
           new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
@@ -663,14 +675,40 @@ export default function UnifiedSurvey() {
           (answer) => answer.questionId === prompt1Id
         );
         setFilteredAnswers(prompt1Answers);
+        
+        // Set featured answers for carousel
+        const featuredPrompt1Answers = prompt1Answers.filter(answer => answer.featured === "Yes");
+        setFeaturedAnswers(featuredPrompt1Answers);
       } else {
         setFilteredAnswers(mergedAnswers);
+        
+        // Set featured answers for carousel
+        const featuredAllAnswers = mergedAnswers.filter(answer => answer.featured === "Yes");
+        setFeaturedAnswers(featuredAllAnswers);
       }
     } catch (error) {
       console.error("Error loading answers:", error);
     } finally {
       setRefreshingAnswers(false);
     }
+  };
+
+  // Get answers for modal - featured first, then recent
+  const getModalAnswers = () => {
+    if (!selectedQuestion) {
+      return approvedAnswers;
+    }
+    
+    const filtered = approvedAnswers.filter(
+      (answer) => answer.questionId === selectedQuestion
+    );
+    
+    // Separate featured and non-featured answers
+    const featured = filtered.filter(answer => answer.featured === "Yes");
+    const nonFeatured = filtered.filter(answer => answer.featured !== "Yes");
+    
+    // Return featured first, then non-featured (already sorted by date)
+    return [...featured, ...nonFeatured];
   };
 
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -1540,7 +1578,7 @@ export default function UnifiedSurvey() {
 
                 <div className="md:max-w-[73%]">
                   {/* Carousel Container */}
-                  {filteredAnswers?.length > 0 ? (
+                  {featuredAnswers?.length > 0 ? (
                     <div className="relative">
                       {/* Carousel */}
                       <div
@@ -1551,7 +1589,7 @@ export default function UnifiedSurvey() {
                           msOverflowStyle: "none",
                         }}
                       >
-                        {filteredAnswers?.map((answer, index) => (
+                        {featuredAnswers?.map((answer, index) => (
                           <div
                             key={answer.id}
                             className="carousel-item flex-shrink-0 w-full md:w-[83%] lg:w-[80%] md:p-6 py-2 relative"
@@ -1560,13 +1598,11 @@ export default function UnifiedSurvey() {
                             }}
                           >
                             {/* Featured Badge */}
-                            {answer.featured === "Yes" && (
-                              <div className="mb-3">
-                                <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
-                                  Featured
-                                </span>
-                              </div>
-                            )}
+                            <div className="mb-3">
+                              <span className="inline-block bg-[#FFD700] text-[#133844] text-[10px] md:text-[12px] font-open-bold px-3 py-1 rounded-full">
+                                Featured
+                              </span>
+                            </div>
 
                             {/* Answer Text */}
                             <div className="mb-2">
@@ -1610,7 +1646,7 @@ export default function UnifiedSurvey() {
 
                       {/* Navigation Dots */}
                       <div className="flex justify-start md:ml-8  gap-2 md:mt-4">
-                        {filteredAnswers?.map((_, index) => (
+                        {featuredAnswers?.map((_, index) => (
                           <button
                             key={index}
                             onClick={() => handleCarouselDotClick(index)}
@@ -1651,7 +1687,7 @@ export default function UnifiedSurvey() {
                     {/* Header */}
                     <div className="sticky top-0 p-6 pb-0 flex items-center justify-between z-50">
                       <h2 className="text-[16px] md:text-[24px] font-open-bold text-[#133844]">
-                        Featured answers:
+                        All answers:
                       </h2>
                       <button
                         onClick={() => setShowAllAnswersModal(false)}
@@ -1696,9 +1732,9 @@ export default function UnifiedSurvey() {
                         {/* Custom scrollbar track */}
                         <div className="absolute top-0 right-5 md:h-[420px] h-[435px] rounded w-[5px] bg-[#B9EFE3] -z-3" />
 
-                        {filteredAnswers?.length > 0 ? (
+                        {getModalAnswers()?.length > 0 ? (
                           <div className="space-y-6 z-50">
-                            {filteredAnswers?.map((answer) => (
+                            {getModalAnswers()?.map((answer) => (
                               <div
                                 key={answer.id}
                                 className="py-2 pl-2 border-b mr-8 last:border-b-0 border-[#133844]/30"
