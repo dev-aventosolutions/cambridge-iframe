@@ -32,6 +32,7 @@ export interface Answer {
   suggested_prompt?: string;
   public_consent?: boolean;
   featured?: string; // "Yes" or "No"
+  featured_order?: number; 
 }
 
 export interface UserInfo {
@@ -90,6 +91,7 @@ export const airtableService = {
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
           public_consent: userInfo.publicConsent ? "Yes" : "No",
           featured: "No", // Default value for featured
+          featured_order: 0, // Default value for featured_order
           submittedAt: new Date().toISOString(),
           status: "Pending",
           suggested_prompt: "",
@@ -130,6 +132,7 @@ export const airtableService = {
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
           public_consent: userInfo.publicConsent ? "Yes" : "No",
           featured: "No", // Default value for featured
+          featured_order: 0, // Default value for featured_order
           submittedAt: new Date().toISOString(),
           status: "Pending",
           suggested_prompt: "",
@@ -195,6 +198,7 @@ export const airtableService = {
           privacy_policy: userInfo.gdprConsent ? "Yes" : "No",
           public_consent: userInfo.publicConsent ? "Yes" : "No",
           featured: "No", // Default value for featured
+          featured_order: 0, // Default value for featured_order
           submittedAt: new Date().toISOString(),
           status: "Pending",
         },
@@ -231,7 +235,8 @@ export const airtableService = {
         status: record.fields.status || "Pending",
         suggested_prompt: record.fields.suggested_prompt,
         public_consent: record.fields.public_consent,
-        featured: record.fields.featured || "No", // Handle featured field
+        featured: record.fields.featured || "No",
+        featured_order: record.fields.featured_order || 0, // Include featured_order
       }));
     } catch (error) {
       console.error("Error fetching answers:", error);

@@ -633,83 +633,91 @@ export default function UnifiedSurvey() {
   };
 
   const loadApprovedAnswers = async () => {
-    setRefreshingAnswers(true);
-    try {
-      const [questionsData, answersData] = await Promise.all([
-        airtableService.getQuestions(),
-        airtableService.getAnswers(),
-      ]);
+  setRefreshingAnswers(true);
+  try {
+    const [questionsData, answersData] = await Promise.all([
+      airtableService.getQuestions(),
+      airtableService.getAnswers(),
+    ]);
 
-      const approvedAnswersData = answersData.filter(
-        (answer) => answer.status === "Approved"
-      );
+    const approvedAnswersData = answersData.filter(
+      (answer) => answer.status === "Approved"
+    );
 
-      // Sort: Featured first, then by date (newest first)
-      const sorted = approvedAnswersData.sort((a, b) => {
-        // Featured answers first
-        if (a.featured === "Yes" && b.featured !== "Yes") return -1;
-        if (a.featured !== "Yes" && b.featured === "Yes") return 1;
-        
-        // Then by submission date (newest first)
-        return (
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-        );
-      });
-
-      const mergedAnswers = sorted.map((a) => {
-        const q = questionsData.find((q) => q.id === a.questionId);
-        return {
-          ...a,
-          order: q?.order ?? 999,
-          questionNumber:
-            questionsData.findIndex((q) => q.id === a.questionId) + 1,
-          questionText: q?.question || "Unknown Question",
-        };
-      });
-
-      setApprovedAnswers(mergedAnswers);
-
-      if (questionsData.length > 0) {
-        const prompt1Id = questionsData[0].id;
-        const prompt1Answers = mergedAnswers.filter(
-          (answer) => answer.questionId === prompt1Id
-        );
-        setFilteredAnswers(prompt1Answers);
-        
-        // Set featured answers for carousel
-        const featuredPrompt1Answers = prompt1Answers.filter(answer => answer.featured === "Yes");
-        setFeaturedAnswers(featuredPrompt1Answers);
-      } else {
-        setFilteredAnswers(mergedAnswers);
-        
-        // Set featured answers for carousel
-        const featuredAllAnswers = mergedAnswers.filter(answer => answer.featured === "Yes");
-        setFeaturedAnswers(featuredAllAnswers);
+    // Sort: Featured first by featured_order, then by date (newest first)
+    const sorted = approvedAnswersData.sort((a, b) => {
+      // If both are featured, sort by featured_order
+      if (a.featured === "Yes" && b.featured === "Yes") {
+        return (a.featured_order || 0) - (b.featured_order || 0);
       }
-    } catch (error) {
-      console.error("Error loading answers:", error);
-    } finally {
-      setRefreshingAnswers(false);
+      
+      // Featured answers first
+      if (a.featured === "Yes" && b.featured !== "Yes") return -1;
+      if (a.featured !== "Yes" && b.featured === "Yes") return 1;
+      
+      // Then by submission date (newest first)
+      return (
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+      );
+    });
+
+    const mergedAnswers = sorted.map((a) => {
+      const q = questionsData.find((q) => q.id === a.questionId);
+      return {
+        ...a,
+        order: q?.order ?? 999,
+        questionNumber:
+          questionsData.findIndex((q) => q.id === a.questionId) + 1,
+        questionText: q?.question || "Unknown Question",
+      };
+    });
+
+    setApprovedAnswers(mergedAnswers);
+
+    if (questionsData.length > 0) {
+      const prompt1Id = questionsData[0].id;
+      const prompt1Answers = mergedAnswers.filter(
+        (answer) => answer.questionId === prompt1Id
+      );
+      setFilteredAnswers(prompt1Answers);
+      
+      // Set featured answers for carousel
+      const featuredPrompt1Answers = prompt1Answers.filter(answer => answer.featured === "Yes");
+      setFeaturedAnswers(featuredPrompt1Answers);
+    } else {
+      setFilteredAnswers(mergedAnswers);
+      
+      // Set featured answers for carousel
+      const featuredAllAnswers = mergedAnswers.filter(answer => answer.featured === "Yes");
+      setFeaturedAnswers(featuredAllAnswers);
     }
-  };
+  } catch (error) {
+    console.error("Error loading answers:", error);
+  } finally {
+    setRefreshingAnswers(false);
+  }
+};
 
   // Get answers for modal - featured first, then recent
   const getModalAnswers = () => {
-    if (!selectedQuestion) {
-      return approvedAnswers;
-    }
-    
-    const filtered = approvedAnswers.filter(
-      (answer) => answer.questionId === selectedQuestion
-    );
-    
-    // Separate featured and non-featured answers
-    const featured = filtered.filter(answer => answer.featured === "Yes");
-    const nonFeatured = filtered.filter(answer => answer.featured !== "Yes");
-    
-    // Return featured first, then non-featured (already sorted by date)
-    return [...featured, ...nonFeatured];
-  };
+  if (!selectedQuestion) {
+    return approvedAnswers;
+  }
+  
+  const filtered = approvedAnswers.filter(
+    (answer) => answer.questionId === selectedQuestion
+  );
+  
+  // Separate featured and non-featured answers
+  const featured = filtered
+    .filter(answer => answer.featured === "Yes")
+    .sort((a, b) => (a.featured_order || 0) - (b.featured_order || 0)); // Sort featured by featured_order
+  
+  const nonFeatured = filtered.filter(answer => answer.featured !== "Yes");
+  
+  // Return featured first (ordered by featured_order), then non-featured (sorted by date)
+  return [...featured, ...nonFeatured];
+};
 
   const handleAnswerChange = (questionId: string, value: string) => {
     if (value.length <= CHARACTER_LIMIT) {
